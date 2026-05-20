@@ -1,10 +1,10 @@
 # AI PM Case Studies
 
-A portfolio of public PM case studies on AI products — written as if I were responsible for the next 18 months of revenue growth on each one. Built to demonstrate AI-native PM craft: strategy + measurement + shipping, not just opinions.
+A portfolio of public PM case studies on AI products — written as if I were responsible for the next 18 months of product development.
 
 ## What each case study contains
 
-Every case study follows the same 7-section spine — the structure of a real PM strategy doc, not a blog post:
+Every case study follows the same 7-section spine — the structure of a real PM strategy doc:
 
 1. **Market analysis** — TAM/SAM, competitive segments, where the market is going
 2. **SWOT** — grounded in public evidence, cross-linked to opportunities
@@ -21,11 +21,6 @@ Plus a **self-contained `walkthrough.html`** per case study — the showcase art
 | Product | Status | Thesis | Walkthrough |
 |---|---|---|---|
 | [**Claude Code**](./claude-code/) | ✅ Complete | 5–10× revenue in 18 months by anchoring on Enterprise + GitHub-native distribution before chasing Web/Async | [HTML](./claude-code/walkthrough.html) |
-| Cursor | 🔜 Planned | TBD | — |
-| Granola | 🔜 Planned | TBD | — |
-| Perplexity | 🔜 Planned | TBD | — |
-| NotebookLM | 🔜 Planned | TBD | — |
-| Replit Agent | 🔜 Planned | TBD | — |
 
 ## How these are built
 
