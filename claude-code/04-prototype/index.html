@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Claude Code · Fleet — Async Agent Dashboard (Prototype)</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --bg-elev: #11141a;
+    --bg-elev-2: #161a22;
+    --bg-elev-3: #1c2129;
+    --border: #232a36;
+    --border-strong: #2e3744;
+    --text: #e7ecf3;
+    --text-dim: #9aa4b2;
+    --text-mute: #6b7382;
+    --accent: #d97757;          /* Anthropic clay */
+    --accent-2: #f0a37b;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --violet: #a78bfa;
+    --red: #f87171;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    height: 100%;
+    overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+
+  /* ============ TOP BAR ============ */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px;
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    height: 52px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-logo {
+    width: 26px; height: 26px;
+    background: radial-gradient(circle at 30% 30%, var(--accent-2), var(--accent));
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #0b0d10; font-size: 13px;
+  }
+  .brand-name { font-weight: 600; letter-spacing: 0.1px; }
+  .brand-tag {
+    font-size: 11px; color: var(--text-mute);
+    padding: 2px 7px; border: 1px solid var(--border-strong);
+    border-radius: 4px; margin-left: 8px;
+    font-family: var(--mono);
+  }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn:hover { background: var(--bg-elev-3); border-color: #3a4554; }
+  .btn-primary {
+    background: var(--accent); color: #0b0d10; border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+  .btn svg { width: 13px; height: 13px; }
+  .pill {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    font-family: var(--mono); letter-spacing: 0.2px;
+  }
+  .pill-live { background: rgba(74, 222, 128, 0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+
+  /* ============ MAIN LAYOUT ============ */
+  .main { display: flex; flex: 1; min-height: 0; }
+  .sidebar {
+    width: 220px;
+    background: var(--bg-elev);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    flex-shrink: 0;
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .side-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text-mute); padding: 0 8px 6px;
+  }
+  .nav-item {
+    padding: 7px 10px; border-radius: 5px;
+    color: var(--text-dim); font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; gap: 9px;
+    transition: background 0.1s;
+  }
+  .nav-item:hover { background: var(--bg-elev-2); color: var(--text); }
+  .nav-item.active { background: var(--bg-elev-3); color: var(--text); }
+  .nav-count {
+    margin-left: auto;
+    font-size: 11px; font-family: var(--mono);
+    color: var(--text-mute);
+    background: var(--bg-elev-2);
+    padding: 1px 6px; border-radius: 8px;
+  }
+  .nav-item.active .nav-count { background: var(--bg); color: var(--accent-2); }
+
+  .fleet-stats {
+    margin-top: auto;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .stat-row { display: flex; justify-content: space-between; font-size: 12px; margin: 4px 0; }
+  .stat-row .lbl { color: var(--text-mute); }
+  .stat-row .val { color: var(--text); font-family: var(--mono); }
+
+  /* ============ FLEET BOARD ============ */
+  .board {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(217,119,87,0.06), transparent),
+      var(--bg);
+  }
+  .board-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 18px;
+  }
+  .board-title { font-size: 20px; font-weight: 600; }
+  .board-sub { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+  .board-filters { display: flex; gap: 6px; }
+  .filter-chip {
+    font-size: 12px; padding: 4px 10px;
+    background: var(--bg-elev-2); border: 1px solid var(--border-strong);
+    border-radius: 14px; color: var(--text-dim); cursor: pointer;
+  }
+  .filter-chip.active { background: var(--bg-elev-3); color: var(--text); border-color: var(--accent); }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+  }
+  .agent-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+  }
+  .agent-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .agent-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(217,119,87,0.15);
+  }
+  .agent-card .accent-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .card-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 8px; gap: 10px;
+  }
+  .card-task-id {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-mute);
+    margin-bottom: 3px;
+  }
+  .card-title { font-size: 14px; font-weight: 600; line-height: 1.35; }
+  .card-repo { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-family: var(--mono); }
+  .status-badge {
+    font-size: 10px; font-family: var(--mono);
+    padding: 3px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    white-space: nowrap;
+    display: flex; align-items: center; gap: 5px;
+    flex-shrink: 0;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block;
+  }
+  .s-planning  { background: rgba(96,165,250,0.12);  color: var(--blue);   border: 1px solid rgba(96,165,250,0.3); }
+  .s-planning .status-dot  { background: var(--blue); animation: pulse 1.5s infinite; }
+  .s-coding    { background: rgba(167,139,250,0.12); color: var(--violet); border: 1px solid rgba(167,139,250,0.3); }
+  .s-coding .status-dot    { background: var(--violet); animation: pulse 1.5s infinite; }
+  .s-testing   { background: rgba(251,191,36,0.12);  color: var(--amber);  border: 1px solid rgba(251,191,36,0.3); }
+  .s-testing .status-dot   { background: var(--amber); animation: pulse 1.5s infinite; }
+  .s-review    { background: rgba(240,163,123,0.12); color: var(--accent-2); border: 1px solid rgba(240,163,123,0.3); }
+  .s-review .status-dot    { background: var(--accent-2); animation: pulse 1.5s infinite; }
+  .s-pr-open   { background: rgba(74,222,128,0.12);  color: var(--green);  border: 1px solid rgba(74,222,128,0.3); }
+  .s-pr-open .status-dot   { background: var(--green); }
+  .s-blocked   { background: rgba(248,113,113,0.12); color: var(--red);    border: 1px solid rgba(248,113,113,0.3); }
+  .s-blocked .status-dot   { background: var(--red); animation: pulse 1.5s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .progress-shell {
+    background: var(--bg-elev-3);
+    border-radius: 100px;
+    height: 5px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    border-radius: 100px;
+    transition: width 0.6s ease-out;
+    position: relative;
+  }
+  .progress-fill.done { background: linear-gradient(90deg, var(--green), #86efac); }
+  .progress-fill.blocked { background: linear-gradient(90deg, var(--red), #fca5a5); }
+
+  .card-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .meta-left { display: flex; gap: 14px; }
+  .meta-item { display: flex; align-items: center; gap: 5px; font-family: var(--mono); }
+  .meta-item svg { width: 11px; height: 11px; opacity: 0.7; }
+  .eta { font-family: var(--mono); color: var(--text-dim); }
+  .eta.done { color: var(--green); }
+
+  .card-step {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: var(--bg-elev-2);
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-left: 2px solid var(--border-strong);
+    font-family: var(--mono);
+    line-height: 1.4;
+    min-height: 32px;
+  }
+  .card-step .live-cursor {
+    display: inline-block; width: 6px; height: 11px; background: var(--accent);
+    margin-left: 2px; animation: blink 1s steps(2) infinite;
+    vertical-align: -1px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ============ DETAIL PANEL ============ */
+  .detail {
+    width: 540px;
+    background: var(--bg-elev);
+    border-left: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex; flex-direction: column;
+    transition: width 0.25s;
+  }
+  .detail.closed { width: 0; border-left: none; overflow: hidden; }
+  .detail-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 12px;
+  }
+  .detail-task-id { font-family: var(--mono); font-size: 11px; color: var(--text-mute); }
+  .detail-title { font-size: 15px; font-weight: 600; margin-top: 4px; line-height: 1.35; }
+  .detail-close {
+    background: none; border: none; color: var(--text-mute);
+    cursor: pointer; font-size: 18px; line-height: 1; padding: 4px 8px;
+  }
+  .detail-close:hover { color: var(--text); }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+  }
+  .tab {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-mute);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+  .tab:hover { color: var(--text-dim); }
+  .tab.active { color: var(--accent-2); border-bottom-color: var(--accent); }
+
+  .tab-content {
+    flex: 1; overflow-y: auto; padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+  .tab-content::-webkit-scrollbar { width: 8px; }
+  .tab-content::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+  .transcript .msg {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed var(--border);
+  }
+  .transcript .msg:last-child { border-bottom: none; }
+  .msg-role {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-mute); margin-bottom: 5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .msg-role .tag {
+    background: var(--bg-elev-3); padding: 1px 6px; border-radius: 3px;
+    font-family: var(--mono); color: var(--text-dim);
+  }
+  .msg-role .ts { color: var(--text-mute); font-family: var(--mono); }
+  .msg-body { color: var(--text); }
+  .msg-tool { color: var(--violet); }
+  .msg-thought { color: var(--text-dim); font-style: italic; }
+  .msg-tool-call {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .msg-tool-call .tool-name { color: var(--violet); font-weight: 600; }
+  .msg-tool-call .tool-arg { color: var(--accent-2); }
+
+  /* files tab */
+  .file-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-size: 12.5px;
+  }
+  .file-row:hover { background: var(--bg-elev-2); }
+  .file-icon {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-mute);
+    width: 24px; text-align: center;
+    padding: 1px 0; border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .file-icon.add { color: var(--green); border-color: rgba(74,222,128,0.4); }
+  .file-icon.mod { color: var(--amber); border-color: rgba(251,191,36,0.4); }
+  .file-icon.del { color: var(--red); border-color: rgba(248,113,113,0.4); }
+  .file-path { flex: 1; color: var(--text); }
+  .file-diff { color: var(--text-mute); font-family: var(--mono); font-size: 11px; }
+  .file-diff .add-n { color: var(--green); }
+  .file-diff .del-n { color: var(--red); margin-left: 4px; }
+
+  /* plan tab */
+  .plan-step {
+    padding: 10px 12px;
+    border-left: 2px solid var(--border-strong);
+    margin-left: 8px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .plan-step::before {
+    content: ''; position: absolute;
+    left: -7px; top: 14px;
+    width: 11px; height: 11px;
+    border-radius: 50%;
+    background: var(--bg-elev-3);
+    border: 2px solid var(--border-strong);
+  }
+  .plan-step.done::before { background: var(--green); border-color: var(--green); }
+  .plan-step.active::before { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217,119,87,0.2); }
+  .plan-step .step-title { color: var(--text); margin-bottom: 3px; }
+  .plan-step .step-sub { color: var(--text-mute); font-size: 11.5px; }
+  .plan-step.done .step-title { color: var(--text-dim); text-decoration: line-through; text-decoration-color: var(--text-mute); }
+
+  /* terminal */
+  .terminal {
+    background: #06080b;
+    border-radius: 5px;
+    padding: 10px 12px;
+    color: #c8d1dc;
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .terminal .cmd { color: var(--green); }
+  .terminal .out { color: var(--text-dim); }
+  .terminal .err { color: var(--red); }
+  .terminal .info { color: var(--blue); }
+
+  /* PR preview */
+  .pr-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .pr-title { color: var(--text); font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .pr-meta { font-size: 12px; color: var(--text-mute); margin-bottom: 12px; font-family: var(--mono); }
+  .pr-body { color: var(--text-dim); white-space: pre-wrap; font-size: 12.5px; line-height: 1.6; }
+  .pr-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+  /* spawn modal */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; opacity: 0; pointer-events: none;
+    transition: opacity 0.18s;
+  }
+  .modal-bg.open { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    width: 540px; max-width: 90vw;
+    padding: 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal h3 { margin: 0 0 4px; font-size: 16px; }
+  .modal p { margin: 0 0 16px; font-size: 13px; color: var(--text-dim); }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 5px; }
+  .field input, .field textarea, .field select {
+    width: 100%; background: var(--bg-elev-2);
+    border: 1px solid var(--border-strong); color: var(--text);
+    padding: 8px 10px; border-radius: 5px; font-family: inherit; font-size: 13px;
+    resize: vertical;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .suggest-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .suggest-chip {
+    background: var(--bg-elev-2); border: 1px solid var(--border);
+    border-radius: 5px; padding: 7px 9px; font-size: 12px;
+    cursor: pointer; color: var(--text-dim); text-align: left;
+  }
+  .suggest-chip:hover { border-color: var(--accent); color: var(--text); }
+
+  /* notification toast */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(120%);
+    background: var(--bg-elev-3); color: var(--text);
+    padding: 10px 16px; border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 200; font-size: 13px;
+    transition: transform 0.3s ease-out;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+  /* tour overlay */
+  .tour-hint {
+    position: fixed; top: 70px; right: 24px;
+    background: linear-gradient(135deg, rgba(217,119,87,0.95), rgba(240,163,123,0.95));
+    color: #0b0d10;
+    padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: 0 8px 24px rgba(217,119,87,0.35);
+    z-index: 50;
+    display: flex; align-items: center; gap: 10px;
+    max-width: 340px;
+    cursor: pointer;
+    animation: slideIn 0.3s ease-out;
+  }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } }
+  .tour-hint .x { opacity: 0.6; }
+
+  /* scrollbars in board */
+  .board::-webkit-scrollbar { width: 10px; }
+  .board::-webkit-scrollbar-track { background: var(--bg); }
+  .board::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 5px; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--text-mute);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">C</div>
+    <div>
+      <span class="brand-name">Claude Code</span>
+      <span class="brand-tag">fleet · async agents</span>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <span class="pill pill-live"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:1px;"></span>3 active</span>
+    <button class="btn" id="speed-btn" title="Demo playback speed">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l10 6-10 6V2z"/></svg>
+      <span id="speed-label">1×</span>
+    </button>
+    <button class="btn btn-primary" id="spawn-btn">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Dispatch agent
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- ============ SIDEBAR ============ -->
+  <div class="sidebar">
+    <div>
+      <div class="side-section-title">Fleet</div>
+      <div class="nav-item active">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        All agents
+        <span class="nav-count" id="count-all">5</span>
+      </div>
+      <div class="nav-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6" stroke="currentColor" fill="none" stroke-width="1.5"/><circle cx="8" cy="8" r="2"/></svg>
+        Active
+        <span class="nav-count" id="count-active">3</span>
+      </div>
+      <div class="nav-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M4 8l3 3 5-6" stroke="currentColor" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Ready for review
+        <span class="nav-count" id="count-review">1</span>
+      </div>
+      <div class="nav-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 3v5l3 2" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="6" stroke="currentColor" fill="none" stroke-width="1.5"/></svg>
+        Blocked
+        <span class="nav-count" id="count-blocked">1</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-section-title">Repos</div>
+      <div class="nav-item"><span style="font-family:var(--mono);font-size:11px;color:var(--text-mute);">▸</span> acme/web</div>
+      <div class="nav-item"><span style="font-family:var(--mono);font-size:11px;color:var(--text-mute);">▸</span> acme/api</div>
+      <div class="nav-item"><span style="font-family:var(--mono);font-size:11px;color:var(--text-mute);">▸</span> acme/mobile</div>
+      <div class="nav-item"><span style="font-family:var(--mono);font-size:11px;color:var(--text-mute);">▸</span> acme/infra</div>
+    </div>
+
+    <div class="fleet-stats">
+      <div class="side-section-title" style="padding:0 0 8px;">This week</div>
+      <div class="stat-row"><span class="lbl">Tasks shipped</span><span class="val">17</span></div>
+      <div class="stat-row"><span class="lbl">PRs opened</span><span class="val">14</span></div>
+      <div class="stat-row"><span class="lbl">Avg cycle</span><span class="val">22m</span></div>
+      <div class="stat-row"><span class="lbl">Compute</span><span class="val">$42.10</span></div>
+    </div>
+  </div>
+
+  <!-- ============ BOARD ============ -->
+  <div class="board">
+    <div class="board-header">
+      <div>
+        <div class="board-title">Agent fleet</div>
+        <div class="board-sub">5 agents · click any card to inspect transcript, plan, files, and PR</div>
+      </div>
+      <div class="board-filters">
+        <div class="filter-chip active" data-filter="all">All</div>
+        <div class="filter-chip" data-filter="active">Active</div>
+        <div class="filter-chip" data-filter="review">Review</div>
+        <div class="filter-chip" data-filter="blocked">Blocked</div>
+      </div>
+    </div>
+    <div class="cards-grid" id="cards"></div>
+  </div>
+
+  <!-- ============ DETAIL PANEL ============ -->
+  <div class="detail closed" id="detail">
+    <div class="detail-header">
+      <div>
+        <div class="detail-task-id" id="d-task-id">TASK-000</div>
+        <div class="detail-title" id="d-title">—</div>
+      </div>
+      <button class="detail-close" id="d-close">×</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="transcript">Transcript</div>
+      <div class="tab" data-tab="plan">Plan</div>
+      <div class="tab" data-tab="files">Files</div>
+      <div class="tab" data-tab="terminal">Terminal</div>
+      <div class="tab" data-tab="pr">PR</div>
+    </div>
+    <div class="tab-content" id="tab-content"></div>
+  </div>
+</div>
+
+<!-- ============ SPAWN MODAL ============ -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Dispatch a new agent</h3>
+    <p>Describe the task in plain English. The agent will plan, code, test, and open a PR.</p>
+
+    <div class="field">
+      <label>Quick templates</label>
+      <div class="suggest-grid">
+        <div class="suggest-chip" data-tpl="Add a dark-mode toggle to the settings page with persistence in localStorage">Add dark-mode toggle</div>
+        <div class="suggest-chip" data-tpl="Fix the flaky CartCheckout.test.ts — it fails ~30% of CI runs on retry logic">Fix flaky cart test</div>
+        <div class="suggest-chip" data-tpl="Migrate /api/users from Express to Fastify, keep the same response contract">Migrate Express → Fastify</div>
+        <div class="suggest-chip" data-tpl="Add an integration test that verifies SSO login with Okta works end-to-end">Add SSO integration test</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Repo</label>
+      <select id="m-repo">
+        <option>acme/web</option>
+        <option>acme/api</option>
+        <option>acme/mobile</option>
+        <option>acme/infra</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Task description</label>
+      <textarea id="m-task" rows="3" placeholder="e.g. Refactor the auth middleware to use the new session store..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="m-cancel">Cancel</button>
+      <button class="btn btn-primary" id="m-dispatch">Dispatch agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast" id="toast"><span class="dot"></span><span id="toast-msg">Agent dispatched</span></div>
+
+<!-- ============ TOUR HINT ============ -->
+<div class="tour-hint" id="tour" style="display:none;">
+  <span><b>Tip:</b> Click any card to inspect the agent's live transcript</span>
+  <span class="x">✕</span>
+</div>
+
+<script>
+/* =========================================================================
+   FLEET DATA — five scripted agents at different points in their lifecycle.
+   The "AI behavior" below is deterministic — see README.md for what's mocked.
+   ========================================================================= */
+
+const AGENTS = [
+  {
+    id: 'TASK-4127',
+    title: 'Add a logout button to the user menu in the React app',
+    repo: 'acme/web',
+    branch: 'agent/logout-button',
+    status: 'coding',
+    progress: 62,
+    eta: '4m',
+    started: '6m ago',
+    filesTouched: 4,
+    linesAdded: 38,
+    linesRemoved: 6,
+    cost: '$0.42',
+    plan: [
+      { t: 'Read existing UserMenu and auth context', done: true },
+      { t: 'Locate session.destroy() helper in /lib/auth', done: true },
+      { t: 'Add LogoutButton component with confirm dialog', done: true },
+      { t: 'Wire onClick handler — call signOut() and redirect to /', done: false, active: true },
+      { t: 'Add unit test for LogoutButton', done: false },
+      { t: 'Run lint + typecheck, open PR', done: false },
+    ],
+    files: [
+      { kind: 'add', path: 'src/components/UserMenu/LogoutButton.tsx', add: 24, del: 0 },
+      { kind: 'mod', path: 'src/components/UserMenu/UserMenu.tsx', add: 8, del: 2 },
+      { kind: 'mod', path: 'src/components/UserMenu/UserMenu.test.tsx', add: 6, del: 0 },
+      { kind: 'mod', path: 'src/components/UserMenu/index.ts', add: 0, del: 4 },
+    ],
+    transcript: [
+      { role: 'user', ts: '14:02:11', body: 'Add a logout button to the user menu in the React app. Should sign the user out and redirect to /.' },
+      { role: 'assistant', ts: '14:02:14', thought: 'Let me start by understanding the existing user menu and auth setup.' },
+      { role: 'tool', ts: '14:02:15', tool: 'Glob', arg: '**/UserMenu*', result: '4 matches: UserMenu.tsx, UserMenu.test.tsx, UserMenu.module.css, index.ts' },
+      { role: 'tool', ts: '14:02:18', tool: 'Read', arg: 'src/components/UserMenu/UserMenu.tsx', result: '67 lines — dropdown component with profile + settings entries' },
+      { role: 'tool', ts: '14:02:21', tool: 'Grep', arg: 'signOut|logout|session.destroy', result: 'Found signOut() exported from src/lib/auth/session.ts (used in 2 places)' },
+      { role: 'assistant', ts: '14:02:25', body: 'Plan: add a LogoutButton component matching the existing menu-item pattern, wire it to signOut(), then redirect via useRouter. Will add a confirm dialog for accidental clicks since this is a destructive action.' },
+      { role: 'tool', ts: '14:02:30', tool: 'Write', arg: 'src/components/UserMenu/LogoutButton.tsx', result: 'Created (24 lines)' },
+      { role: 'tool', ts: '14:02:34', tool: 'Edit', arg: 'src/components/UserMenu/UserMenu.tsx', result: 'Added LogoutButton import + render at end of menu' },
+      { role: 'assistant', ts: '14:02:40', thought: 'Now wiring the onClick handler and verifying redirect behavior...' },
+    ],
+    terminal: [
+      { type: 'cmd', text: '$ pnpm install' },
+      { type: 'out', text: 'Lockfile is up to date, resolution step is skipped' },
+      { type: 'out', text: 'Already up to date · Done in 1.2s' },
+      { type: 'cmd', text: '$ pnpm typecheck' },
+      { type: 'out', text: '✓ No type errors found' },
+    ],
+    pr: null,
+  },
+
+  {
+    id: 'TASK-4128',
+    title: 'Migrate /api/users endpoint from Express to Fastify',
+    repo: 'acme/api',
+    branch: 'agent/fastify-users',
+    status: 'planning',
+    progress: 14,
+    eta: '11m',
+    started: '2m ago',
+    filesTouched: 2,
+    linesAdded: 0,
+    linesRemoved: 0,
+    cost: '$0.18',
+    plan: [
+      { t: 'Read existing /api/users routes + middleware', done: true },
+      { t: 'Map Express middleware → Fastify hooks', done: false, active: true },
+      { t: 'Rewrite handlers with Fastify schemas (zod → JSON schema)', done: false },
+      { t: 'Update OpenAPI spec', done: false },
+      { t: 'Port existing supertest cases to fastify.inject()', done: false },
+      { t: 'Run full integration suite, open PR', done: false },
+    ],
+    files: [
+      { kind: 'mod', path: 'src/routes/users.ts', add: 0, del: 0 },
+      { kind: 'mod', path: 'src/server.ts', add: 0, del: 0 },
+    ],
+    transcript: [
+      { role: 'user', ts: '14:06:02', body: 'Migrate /api/users from Express to Fastify, keep the same response contract.' },
+      { role: 'assistant', ts: '14:06:05', thought: 'I need to understand the current endpoint, then plan the migration in a way that preserves the response shape and HTTP semantics exactly.' },
+      { role: 'tool', ts: '14:06:06', tool: 'Read', arg: 'src/routes/users.ts', result: '142 lines — GET /users, GET /users/:id, POST /users, PATCH /users/:id with auth + rate-limit middleware' },
+      { role: 'tool', ts: '14:06:09', tool: 'Read', arg: 'src/server.ts', result: '58 lines — Express app with cors, helmet, pino-http, body-parser' },
+      { role: 'assistant', ts: '14:06:14', body: 'I see 4 middleware (auth, rateLimit, validate, audit) and 4 routes. Fastify equivalents: auth/audit → onRequest hook, rateLimit → @fastify/rate-limit plugin, validate → built-in JSON schema. Let me map each one and confirm contract preservation before writing code.' },
+    ],
+    terminal: [
+      { type: 'cmd', text: '$ pnpm ls express fastify' },
+      { type: 'out', text: 'express 4.19.2' },
+      { type: 'info', text: 'fastify not installed — will add as dep' },
+    ],
+    pr: null,
+  },
+
+  {
+    id: 'TASK-4125',
+    title: 'Fix flaky CartCheckout.test.ts — fails ~30% on retry logic',
+    repo: 'acme/web',
+    branch: 'agent/cart-retry-flake',
+    status: 'testing',
+    progress: 84,
+    eta: '2m',
+    started: '18m ago',
+    filesTouched: 3,
+    linesAdded: 22,
+    linesRemoved: 14,
+    cost: '$1.08',
+    plan: [
+      { t: 'Reproduce flake locally — run test 20× in a loop', done: true },
+      { t: 'Identify race in mockServer + setTimeout retry', done: true },
+      { t: 'Replace real setTimeout with vi.useFakeTimers()', done: true },
+      { t: 'Add explicit await for retry settlement', done: true },
+      { t: 'Re-run 100× to confirm 0% failure', done: false, active: true },
+      { t: 'Open PR with regression note', done: false },
+    ],
+    files: [
+      { kind: 'mod', path: 'src/cart/CartCheckout.test.ts', add: 18, del: 12 },
+      { kind: 'mod', path: 'src/cart/useRetryPayment.ts', add: 4, del: 2 },
+      { kind: 'add', path: 'src/test-utils/timers.ts', add: 0, del: 0 },
+    ],
+    transcript: [
+      { role: 'user', ts: '13:46:31', body: 'Fix the flaky CartCheckout.test.ts — it fails ~30% of CI runs on the retry logic.' },
+      { role: 'assistant', ts: '13:46:33', thought: 'Flaky tests almost always boil down to timing, ordering, or shared mutable state. Let me reproduce first.' },
+      { role: 'tool', ts: '13:46:35', tool: 'Bash', arg: 'for i in {1..20}; do pnpm vitest run CartCheckout.test.ts; done', result: '7/20 failed — all on "retries failed payment 3 times" case' },
+      { role: 'tool', ts: '13:48:12', tool: 'Read', arg: 'src/cart/CartCheckout.test.ts', result: '186 lines — uses real setTimeout(50ms) between retries' },
+      { role: 'assistant', ts: '13:48:30', body: 'Root cause: the test uses real timers and asserts on intermediate state. When the event loop is loaded, the 50ms retry sometimes fires before the test\'s setTimeout(0) flushes. Fix: switch to vi.useFakeTimers() and advance manually after each retry.' },
+      { role: 'tool', ts: '13:48:55', tool: 'Edit', arg: 'src/cart/CartCheckout.test.ts', result: 'Replaced 4 real-timer waits with vi.advanceTimersByTimeAsync' },
+      { role: 'tool', ts: '13:49:20', tool: 'Bash', arg: 'for i in {1..100}; do pnpm vitest run CartCheckout.test.ts -t "retries"; done', result: 'Running... 67/100 complete · 0 failures so far' },
+      { role: 'assistant', ts: '14:04:01', thought: 'Confidence is high. Letting the 100-run loop finish before opening PR.' },
+    ],
+    terminal: [
+      { type: 'cmd', text: '$ pnpm vitest run CartCheckout.test.ts -t "retries"  # run 67 of 100' },
+      { type: 'out', text: '✓ src/cart/CartCheckout.test.ts (1)' },
+      { type: 'out', text: '  ✓ retries failed payment 3 times then succeeds (12ms)' },
+      { type: 'out', text: 'Test Files  1 passed (1)' },
+      { type: 'out', text: '     Tests  1 passed (1)' },
+      { type: 'info', text: '\n→ pass rate: 67/67 · 0 flakes' },
+    ],
+    pr: null,
+  },
+
+  {
+    id: 'TASK-4119',
+    title: 'Add structured logging to the payment-webhook handler',
+    repo: 'acme/api',
+    branch: 'agent/webhook-logging',
+    status: 'pr-open',
+    progress: 100,
+    eta: 'done',
+    started: '42m ago',
+    filesTouched: 5,
+    linesAdded: 87,
+    linesRemoved: 12,
+    cost: '$2.15',
+    plan: [
+      { t: 'Audit current console.log usage', done: true },
+      { t: 'Introduce pino logger with request-scoped child', done: true },
+      { t: 'Replace 14 console.log calls with structured fields', done: true },
+      { t: 'Add log redaction for card PANs and emails', done: true },
+      { t: 'Add unit tests for redaction', done: true },
+      { t: 'Open PR — link to Datadog dashboard for verification', done: true },
+    ],
+    files: [
+      { kind: 'add', path: 'src/lib/logger.ts', add: 34, del: 0 },
+      { kind: 'mod', path: 'src/webhooks/payment.ts', add: 28, del: 14 },
+      { kind: 'mod', path: 'src/webhooks/payment.test.ts', add: 18, del: 0 },
+      { kind: 'add', path: 'src/lib/logger.test.ts', add: 22, del: 0 },
+      { kind: 'mod', path: 'package.json', add: 1, del: 0 },
+    ],
+    transcript: [
+      { role: 'user', ts: '13:22:00', body: 'Add structured logging to the payment-webhook handler. We need to grep for "webhook_id=" in Datadog and currently can\'t.' },
+      { role: 'assistant', ts: '13:22:03', body: 'I\'ll introduce pino, scope a logger per webhook with the webhook_id, and replace existing console.log calls. I\'ll also add PAN/email redaction since the payment payload contains PII.' },
+      { role: 'tool', ts: '13:22:08', tool: 'Grep', arg: 'console\\.(log|warn|error)', result: '14 matches across src/webhooks/payment.ts' },
+      { role: 'tool', ts: '13:22:15', tool: 'Bash', arg: 'pnpm add pino pino-pretty', result: 'added 12 packages in 4s' },
+      { role: 'assistant', ts: '13:24:30', body: 'Done. All 14 logs are now structured with webhook_id, event_type, and correlation_id. Redaction covers card_number (last-4 only) and customer_email (hashed). Tests confirm no PII leaks. Opening PR.' },
+      { role: 'tool', ts: '13:31:18', tool: 'Bash', arg: 'gh pr create --title "Add structured logging to payment-webhook"', result: 'https://github.com/acme/api/pull/2891' },
+    ],
+    terminal: [
+      { type: 'cmd', text: '$ pnpm test src/webhooks/payment.test.ts' },
+      { type: 'out', text: '✓ 14 logs emit webhook_id field' },
+      { type: 'out', text: '✓ card PAN is redacted to last-4 only' },
+      { type: 'out', text: '✓ email is sha256 hashed in logs' },
+      { type: 'out', text: 'Tests  17 passed (17)' },
+      { type: 'cmd', text: '$ gh pr create' },
+      { type: 'out', text: 'Opening PR in github.com/acme/api...' },
+      { type: 'out', text: 'https://github.com/acme/api/pull/2891' },
+    ],
+    pr: {
+      number: 2891,
+      title: 'Add structured logging to payment-webhook',
+      meta: 'acme/api · agent/webhook-logging → main · +87 −12 across 5 files',
+      body:
+'## Why\nWe currently can\'t grep for `webhook_id=` in Datadog because the payment-webhook handler uses unstructured console.log. This blocked incident response in #2841.\n\n## What\n- Introduce `pino` with a request-scoped child logger keyed on `webhook_id`\n- Replace 14 `console.log` calls with structured `{ webhook_id, event_type, correlation_id }` fields\n- Add redaction for card PANs (last-4 only) and customer emails (sha256)\n- Unit tests for redaction so we don\'t regress\n\n## Verification\n- ✅ 17 tests pass locally\n- ✅ Verified in staging: [Datadog dashboard](#) shows `webhook_id` is queryable\n- ✅ No PII appears in test fixtures\n\n## Risk\nLow — purely additive to the log payload. Existing log-based alerts are unchanged.',
+    },
+  },
+
+  {
+    id: 'TASK-4121',
+    title: 'Bump Stripe SDK from v14 → v17 and update payment intents flow',
+    repo: 'acme/api',
+    branch: 'agent/stripe-v17',
+    status: 'blocked',
+    progress: 38,
+    eta: 'waiting',
+    started: '24m ago',
+    filesTouched: 6,
+    linesAdded: 41,
+    linesRemoved: 28,
+    cost: '$0.91',
+    plan: [
+      { t: 'Read v14 → v17 changelog and migration guide', done: true },
+      { t: 'Update package.json and run codemod', done: true },
+      { t: 'Fix breaking changes in PaymentIntent.confirm()', done: true },
+      { t: 'Update webhook signature verification', done: false, active: true },
+      { t: 'Run integration tests against Stripe test mode', done: false },
+      { t: 'Open PR', done: false },
+    ],
+    files: [
+      { kind: 'mod', path: 'package.json', add: 1, del: 1 },
+      { kind: 'mod', path: 'src/payments/intent.ts', add: 14, del: 12 },
+      { kind: 'mod', path: 'src/payments/intent.test.ts', add: 8, del: 4 },
+      { kind: 'mod', path: 'src/webhooks/stripe.ts', add: 12, del: 8 },
+      { kind: 'mod', path: 'src/lib/stripe-client.ts', add: 6, del: 3 },
+      { kind: 'mod', path: 'pnpm-lock.yaml', add: 0, del: 0 },
+    ],
+    transcript: [
+      { role: 'user', ts: '13:40:14', body: 'Bump Stripe SDK from v14 to v17 and update the payment intents flow accordingly.' },
+      { role: 'assistant', ts: '13:40:16', body: 'I\'ll read the changelog first, then apply changes incrementally so each step is testable.' },
+      { role: 'tool', ts: '13:40:18', tool: 'WebFetch', arg: 'https://github.com/stripe/stripe-node/releases', result: 'Fetched v15, v16, v17 release notes' },
+      { role: 'assistant', ts: '13:42:00', body: 'Three breaking changes affect us: (1) `PaymentIntent.confirm()` no longer accepts `payment_method_data` inline, (2) webhook event types are now branded, (3) `constructEvent()` is async.' },
+      { role: 'tool', ts: '13:45:30', tool: 'Edit', arg: 'src/payments/intent.ts', result: 'Refactored 3 call sites' },
+      { role: 'tool', ts: '13:58:10', tool: 'Bash', arg: 'pnpm test src/webhooks/stripe.test.ts', result: '✗ 2 failures — STRIPE_WEBHOOK_SECRET env var not set in test env' },
+      { role: 'assistant', ts: '13:58:14', thought: 'I need a Stripe test-mode webhook secret to verify the new async constructEvent. This is a credential I should not invent.', body: '⏸ **Blocking on:** I need the `STRIPE_WEBHOOK_SECRET_TEST` to be added to the agent\'s sandbox env, or for a human to verify the webhook flow. Pausing rather than mocking, since signature verification is the riskiest part of this migration.' },
+    ],
+    terminal: [
+      { type: 'cmd', text: '$ pnpm test src/webhooks/stripe.test.ts' },
+      { type: 'err', text: '✗ verifies signature against new async API' },
+      { type: 'err', text: '  Error: STRIPE_WEBHOOK_SECRET_TEST is not defined' },
+      { type: 'info', text: '\n⏸ Agent paused — awaiting human input' },
+    ],
+    pr: null,
+  },
+];
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+
+let state = {
+  filter: 'all',
+  selectedId: null,
+  activeTab: 'transcript',
+  speed: 1,
+  tickHandle: null,
+};
+
+/* =========================================================================
+   RENDER — FLEET CARDS
+   ========================================================================= */
+
+const STATUS_META = {
+  planning: { label: 'planning', cls: 's-planning' },
+  coding:   { label: 'coding',   cls: 's-coding' },
+  testing:  { label: 'testing',  cls: 's-testing' },
+  review:   { label: 'review',   cls: 's-review' },
+  'pr-open':{ label: 'pr open',  cls: 's-pr-open' },
+  blocked:  { label: 'blocked',  cls: 's-blocked' },
+};
+
+const STEP_NARRATION = {
+  planning: 'Mapping middleware → Fastify hooks...',
+  coding:   'Wiring onClick handler in LogoutButton.tsx...',
+  testing:  'Running test 67 of 100 — 0 failures so far',
+  review:   'Reviewing diff for style + edge cases...',
+  'pr-open':'PR opened · awaiting review',
+  blocked:  'Waiting on human input',
+};
+
+function renderCards() {
+  const grid = document.getElementById('cards');
+  const filtered = AGENTS.filter(a => {
+    if (state.filter === 'all') return true;
+    if (state.filter === 'active') return ['planning','coding','testing','review'].includes(a.status);
+    if (state.filter === 'review') return a.status === 'pr-open';
+    if (state.filter === 'blocked') return a.status === 'blocked';
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty-state">No agents match this filter.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(a => {
+    const meta = STATUS_META[a.status];
+    const progressCls = a.status === 'pr-open' ? 'done' : (a.status === 'blocked' ? 'blocked' : '');
+    const etaCls = a.status === 'pr-open' ? 'done' : '';
+    const liveCursor = ['planning','coding','testing','review'].includes(a.status) ? '<span class="live-cursor"></span>' : '';
+    return `
+      <div class="agent-card ${state.selectedId === a.id ? 'selected' : ''}" data-id="${a.id}">
+        <div class="accent-bar"></div>
+        <div class="card-head">
+          <div style="min-width:0;flex:1;">
+            <div class="card-task-id">${a.id} · ${a.started}</div>
+            <div class="card-title">${escapeHtml(a.title)}</div>
+            <div class="card-repo">${a.repo} · ${a.branch}</div>
+          </div>
+          <div class="status-badge ${meta.cls}">
+            <span class="status-dot"></span>${meta.label}
+          </div>
+        </div>
+        <div class="progress-shell">
+          <div class="progress-fill ${progressCls}" style="width:${a.progress}%;"></div>
+        </div>
+        <div class="card-meta">
+          <div class="meta-left">
+            <span class="meta-item">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4h12v8H2z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h12" stroke="currentColor" stroke-width="1.3"/></svg>
+              ${a.filesTouched} files
+            </span>
+            <span class="meta-item" style="color:var(--green);">+${a.linesAdded}</span>
+            <span class="meta-item" style="color:var(--red);">−${a.linesRemoved}</span>
+            <span class="meta-item" style="color:var(--text-mute);">${a.cost}</span>
+          </div>
+          <span class="eta ${etaCls}">${a.eta === 'done' ? '✓ done' : '~' + a.eta}</span>
+        </div>
+        <div class="card-step" data-step-for="${a.id}">${escapeHtml(STEP_NARRATION[a.status])}${liveCursor}</div>
+      </div>
+    `;
+  }).join('');
+
+  // bind clicks
+  grid.querySelectorAll('.agent-card').forEach(c => {
+    c.addEventListener('click', () => selectAgent(c.dataset.id));
+  });
+
+  // update counts
+  document.getElementById('count-all').textContent = AGENTS.length;
+  document.getElementById('count-active').textContent = AGENTS.filter(a => ['planning','coding','testing','review'].includes(a.status)).length;
+  document.getElementById('count-review').textContent = AGENTS.filter(a => a.status === 'pr-open').length;
+  document.getElementById('count-blocked').textContent = AGENTS.filter(a => a.status === 'blocked').length;
+}
+
+/* =========================================================================
+   RENDER — DETAIL PANEL
+   ========================================================================= */
+
+function selectAgent(id) {
+  state.selectedId = id;
+  state.activeTab = 'transcript';
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'transcript'));
+  document.getElementById('detail').classList.remove('closed');
+  const a = AGENTS.find(x => x.id === id);
+  document.getElementById('d-task-id').textContent = `${a.id} · ${a.repo} · ${a.branch}`;
+  document.getElementById('d-title').textContent = a.title;
+  renderTab();
+  renderCards();
+}
+
+function closeDetail() {
+  state.selectedId = null;
+  document.getElementById('detail').classList.add('closed');
+  renderCards();
+}
+
+function renderTab() {
+  if (!state.selectedId) return;
+  const a = AGENTS.find(x => x.id === state.selectedId);
+  const c = document.getElementById('tab-content');
+  if (state.activeTab === 'transcript') c.innerHTML = renderTranscript(a);
+  if (state.activeTab === 'plan')       c.innerHTML = renderPlan(a);
+  if (state.activeTab === 'files')      c.innerHTML = renderFiles(a);
+  if (state.activeTab === 'terminal')   c.innerHTML = renderTerminal(a);
+  if (state.activeTab === 'pr')         c.innerHTML = renderPR(a);
+}
+
+function renderTranscript(a) {
+  return '<div class="transcript">' + a.transcript.map(m => {
+    if (m.role === 'user') {
+      return `<div class="msg">
+        <div class="msg-role"><span class="tag">user</span><span class="ts">${m.ts}</span></div>
+        <div class="msg-body">${escapeHtml(m.body)}</div>
+      </div>`;
+    }
+    if (m.role === 'tool') {
+      return `<div class="msg">
+        <div class="msg-role"><span class="tag" style="color:var(--violet);">tool</span><span class="ts">${m.ts}</span></div>
+        <div class="msg-tool-call">
+          <span class="tool-name">${m.tool}</span>(<span class="tool-arg">${escapeHtml(m.arg)}</span>)
+          <div style="margin-top:6px;color:var(--text-mute);">→ ${escapeHtml(m.result)}</div>
+        </div>
+      </div>`;
+    }
+    if (m.role === 'assistant') {
+      let parts = '';
+      if (m.thought) parts += `<div class="msg-thought">💭 ${escapeHtml(m.thought)}</div>`;
+      if (m.body) parts += `<div class="msg-body" style="margin-top:${m.thought?'8px':'0'};">${escapeHtml(m.body)}</div>`;
+      return `<div class="msg">
+        <div class="msg-role"><span class="tag" style="color:var(--accent-2);">claude</span><span class="ts">${m.ts}</span></div>
+        ${parts}
+      </div>`;
+    }
+    return '';
+  }).join('') + '</div>';
+}
+
+function renderPlan(a) {
+  return a.plan.map(s => {
+    const cls = s.done ? 'done' : (s.active ? 'active' : '');
+    const sub = s.active ? '<div class="step-sub">in progress</div>' : (s.done ? '<div class="step-sub" style="color:var(--green);">complete</div>' : '');
+    return `<div class="plan-step ${cls}">
+      <div class="step-title">${escapeHtml(s.t)}</div>
+      ${sub}
+    </div>`;
+  }).join('');
+}
+
+function renderFiles(a) {
+  if (a.files.length === 0) return '<div style="color:var(--text-mute);">No files touched yet.</div>';
+  return a.files.map(f => `
+    <div class="file-row">
+      <span class="file-icon ${f.kind}">${f.kind === 'add' ? 'A' : f.kind === 'mod' ? 'M' : 'D'}</span>
+      <span class="file-path">${escapeHtml(f.path)}</span>
+      <span class="file-diff">
+        ${f.add ? `<span class="add-n">+${f.add}</span>` : ''}
+        ${f.del ? `<span class="del-n">−${f.del}</span>` : ''}
+      </span>
+    </div>
+  `).join('');
+}
+
+function renderTerminal(a) {
+  return '<div class="terminal">' + a.terminal.map(l => {
+    const cls = l.type;
+    return `<span class="${cls}">${escapeHtml(l.text)}</span>\n`;
+  }).join('') + '</div>';
+}
+
+function renderPR(a) {
+  if (!a.pr) {
+    return `<div style="color:var(--text-mute);padding:20px 0;text-align:center;">
+      <div style="font-size:32px;opacity:0.4;">⌛</div>
+      <div style="margin-top:8px;">No PR yet — agent is still working.</div>
+      <div style="font-size:11px;margin-top:4px;">PR will be drafted automatically when all plan steps complete.</div>
+    </div>`;
+  }
+  return `<div class="pr-box">
+    <div class="pr-title">#${a.pr.number} · ${escapeHtml(a.pr.title)}</div>
+    <div class="pr-meta">${escapeHtml(a.pr.meta)}</div>
+    <div class="pr-body">${escapeHtml(a.pr.body)}</div>
+    <div class="pr-actions">
+      <button class="btn btn-primary">Review on GitHub</button>
+      <button class="btn">Merge</button>
+      <button class="btn">Request changes</button>
+    </div>
+  </div>`;
+}
+
+/* =========================================================================
+   LIVE TICK — progresses active agents over time
+   ========================================================================= */
+
+function tick() {
+  // advance active agents
+  AGENTS.forEach(a => {
+    if (a.status === 'blocked' || a.status === 'pr-open') return;
+
+    a.progress = Math.min(100, a.progress + (Math.random() * 1.6 + 0.3) * state.speed);
+
+    // advance status as progress crosses thresholds
+    const prevStatus = a.status;
+    if (a.progress > 25 && a.status === 'planning') a.status = 'coding';
+    if (a.progress > 75 && a.status === 'coding')   a.status = 'testing';
+    if (a.progress > 95 && a.status === 'testing')  a.status = 'review';
+    if (a.progress >= 100) {
+      a.status = 'pr-open';
+      a.eta = 'done';
+      // auto-build a PR if none
+      if (!a.pr) {
+        a.pr = {
+          number: 2900 + Math.floor(Math.random() * 99),
+          title: a.title,
+          meta: `${a.repo} · ${a.branch} → main · +${a.linesAdded} −${a.linesRemoved} across ${a.filesTouched} files`,
+          body: `## Summary\n${a.title}\n\n## Plan executed\n${a.plan.map(s => '- ' + s.t).join('\n')}\n\n## Test results\nAll checks green. See terminal tab for the run log.\n\n## Notes\nGenerated autonomously by Claude Code agent ${a.id}. Awaiting human review.`,
+        };
+        toast(`${a.id} opened PR #${a.pr.number}`);
+      }
+      // mark all plan steps done
+      a.plan.forEach(s => { s.done = true; s.active = false; });
+    }
+
+    // tick eta down (cosmetic)
+    if (typeof a.eta === 'string' && a.eta.endsWith('m')) {
+      const n = parseInt(a.eta);
+      if (Math.random() < 0.2 && n > 1) a.eta = (n - 1) + 'm';
+    }
+
+    if (prevStatus !== a.status) {
+      // narration changes; full re-render
+    }
+  });
+
+  renderCards();
+  if (state.selectedId) renderTab();
+}
+
+/* =========================================================================
+   EVENTS
+   ========================================================================= */
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+    state.activeTab = t.dataset.tab;
+    renderTab();
+  });
+});
+
+document.querySelectorAll('.filter-chip').forEach(f => {
+  f.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(x => x.classList.toggle('active', x === f));
+    state.filter = f.dataset.filter;
+    renderCards();
+  });
+});
+
+document.getElementById('d-close').addEventListener('click', closeDetail);
+
+// speed toggle
+document.getElementById('speed-btn').addEventListener('click', () => {
+  const speeds = [1, 2, 4];
+  const idx = speeds.indexOf(state.speed);
+  state.speed = speeds[(idx + 1) % speeds.length];
+  document.getElementById('speed-label').textContent = state.speed + '×';
+});
+
+// spawn modal
+const modal = document.getElementById('modal');
+document.getElementById('spawn-btn').addEventListener('click', () => modal.classList.add('open'));
+document.getElementById('m-cancel').addEventListener('click', () => modal.classList.remove('open'));
+modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+document.querySelectorAll('.suggest-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.getElementById('m-task').value = c.dataset.tpl;
+  });
+});
+
+document.getElementById('m-dispatch').addEventListener('click', () => {
+  const task = document.getElementById('m-task').value.trim() ||
+    'Add a dark-mode toggle to the settings page with persistence in localStorage';
+  const repo = document.getElementById('m-repo').value;
+  const newId = 'TASK-' + (4130 + AGENTS.length);
+
+  const newAgent = {
+    id: newId,
+    title: task,
+    repo,
+    branch: 'agent/' + task.toLowerCase().split(' ').slice(0, 3).join('-').replace(/[^a-z-]/g, ''),
+    status: 'planning',
+    progress: 3,
+    eta: '12m',
+    started: 'just now',
+    filesTouched: 0,
+    linesAdded: 0,
+    linesRemoved: 0,
+    cost: '$0.02',
+    plan: [
+      { t: 'Read the relevant files and understand existing patterns', done: false, active: true },
+      { t: 'Draft an implementation plan', done: false },
+      { t: 'Implement changes incrementally', done: false },
+      { t: 'Write or update tests', done: false },
+      { t: 'Run lint, typecheck, and tests', done: false },
+      { t: 'Open PR with summary and verification notes', done: false },
+    ],
+    files: [],
+    transcript: [
+      { role: 'user', ts: timestamp(), body: task },
+      { role: 'assistant', ts: timestamp(1), thought: 'Let me start by exploring the repo to understand the existing patterns.' },
+      { role: 'tool', ts: timestamp(2), tool: 'Glob', arg: '**/*.{ts,tsx,js,jsx}', result: 'scanning workspace...' },
+    ],
+    terminal: [
+      { type: 'info', text: '→ Spawning agent on ' + repo + '...' },
+      { type: 'cmd', text: '$ git checkout -b agent/' + newId.toLowerCase() },
+      { type: 'out', text: "Switched to a new branch 'agent/" + newId.toLowerCase() + "'" },
+    ],
+    pr: null,
+  };
+
+  AGENTS.unshift(newAgent);
+  modal.classList.remove('open');
+  document.getElementById('m-task').value = '';
+  toast(`Dispatched ${newId} on ${repo}`);
+  renderCards();
+  setTimeout(() => selectAgent(newId), 200);
+});
+
+function timestamp(offset = 0) {
+  const d = new Date(Date.now() + offset * 1000);
+  return d.toTimeString().slice(0, 8);
+}
+
+// keyboard: esc closes detail/modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (modal.classList.contains('open')) modal.classList.remove('open');
+    else if (state.selectedId) closeDetail();
+  }
+});
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+
+renderCards();
+state.tickHandle = setInterval(tick, 1800);
+
+// auto-open the most interesting card after a beat
+setTimeout(() => {
+  selectAgent('TASK-4125'); // the flaky test one — has rich transcript
+  // tour hint
+  const tour = document.getElementById('tour');
+  tour.style.display = 'flex';
+  tour.addEventListener('click', () => tour.style.display = 'none');
+  setTimeout(() => tour.style.display = 'none', 8000);
+}, 1200);
+
+</script>
+</body>
+</html>

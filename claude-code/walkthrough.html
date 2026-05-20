@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Claude Code — AI PM Case Study · Tracy Chen</title>
+<meta name="description" content="An AI-PM case study on Anthropic's Claude Code: market, SWOT, opportunities, prototype, evaluation, risks, launch." />
+<style>
+/* -------------------------------------------------------------------------
+   Reset + tokens
+   ------------------------------------------------------------------------- */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Helvetica Neue",Arial,sans-serif;line-height:1.55;font-feature-settings:"ss01","cv02","cv11";text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+
+:root[data-theme="dark"]{
+  --bg:#15110d;
+  --bg-2:#1c1813;
+  --bg-3:#241f18;
+  --panel:#1d1812;
+  --panel-2:#221c15;
+  --border:#33291f;
+  --border-2:#3d3225;
+  --ink:#f3ece1;
+  --ink-2:#cdbfac;
+  --ink-3:#897864;
+  --accent:#d97757;        /* terracotta (Anthropic-ish) */
+  --accent-2:#e6a17a;
+  --sage:#88a187;
+  --clay:#c9905a;
+  --gold:#d4b06a;
+  --red:#cf6b6b;
+  --blue:#7ba6c7;
+  --green:#7fa385;
+  --orange:#d59760;
+  --shadow:0 1px 0 rgba(255,255,255,.03), 0 8px 24px rgba(0,0,0,.35);
+}
+:root[data-theme="light"]{
+  --bg:#f7f2ea;
+  --bg-2:#efe8dc;
+  --bg-3:#e9e0d0;
+  --panel:#ffffff;
+  --panel-2:#fbf6ee;
+  --border:#e3d8c5;
+  --border-2:#d0c1a8;
+  --ink:#1d1812;
+  --ink-2:#4a3e30;
+  --ink-3:#80715b;
+  --accent:#b04e30;
+  --accent-2:#c46a48;
+  --sage:#5d7a5d;
+  --clay:#a87038;
+  --gold:#a8842f;
+  --red:#a14444;
+  --blue:#3d6f93;
+  --green:#4f7558;
+  --orange:#b3702f;
+  --shadow:0 1px 0 rgba(0,0,0,.02), 0 8px 24px rgba(0,0,0,.08);
+}
+
+body{background:var(--bg);color:var(--ink)}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent;transition:border-color .15s ease}
+a:hover{border-bottom-color:var(--accent)}
+h1,h2,h3,h4{font-weight:600;line-height:1.2;letter-spacing:-.01em;margin:0}
+h1{font-size:clamp(2.2rem,5vw,3.6rem);letter-spacing:-.025em}
+h2{font-size:clamp(1.55rem,2.8vw,2.1rem);letter-spacing:-.02em}
+h3{font-size:1.15rem;letter-spacing:-.005em}
+h4{font-size:.95rem}
+p{margin:0 0 .75em}
+code,kbd,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+hr{border:none;border-top:1px solid var(--border);margin:0}
+
+/* -------------------------------------------------------------------------
+   Layout
+   ------------------------------------------------------------------------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+section{padding:96px 0;border-top:1px solid var(--border);position:relative}
+section:first-of-type{border-top:none}
+.eyebrow{display:inline-block;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:14px;padding:5px 10px;border:1px solid var(--accent);border-radius:99px;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.section-head{margin-bottom:40px;max-width:780px}
+.section-head h2{margin-bottom:14px}
+.section-head p.lede{color:var(--ink-2);font-size:1.05rem;margin:0}
+
+/* -------------------------------------------------------------------------
+   Top nav
+   ------------------------------------------------------------------------- */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(10px);-webkit-backdrop-filter:saturate(140%) blur(10px);background:color-mix(in srgb,var(--bg) 80%,transparent);border-bottom:1px solid var(--border)}
+.topbar-inner{max-width:1180px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:.95rem;letter-spacing:-.01em}
+.brand-dot{width:10px;height:10px;border-radius:3px;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.toc{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.toc a{font-size:.82rem;color:var(--ink-2);padding:6px 10px;border-radius:6px;border-bottom:none;white-space:nowrap}
+.toc a:hover{color:var(--ink);background:var(--bg-2)}
+.theme-btn{background:var(--bg-2);border:1px solid var(--border);color:var(--ink);width:36px;height:36px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease}
+.theme-btn:hover{background:var(--bg-3)}
+.theme-btn svg{width:16px;height:16px}
+@media (max-width:900px){.toc{display:none}}
+
+/* -------------------------------------------------------------------------
+   Hero
+   ------------------------------------------------------------------------- */
+.hero{padding:110px 0 80px;background:
+  radial-gradient(900px 500px at 85% -10%, color-mix(in srgb,var(--accent) 14%,transparent), transparent 60%),
+  radial-gradient(700px 400px at 0% 30%, color-mix(in srgb,var(--sage) 9%,transparent), transparent 60%);
+}
+.hero h1{margin-bottom:22px;max-width:18ch}
+.hero .thesis{font-size:clamp(1.1rem,1.7vw,1.3rem);color:var(--ink-2);max-width:62ch;margin-bottom:34px;line-height:1.5}
+.hero .thesis strong{color:var(--ink);font-weight:600}
+.byline{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;margin-bottom:28px;font-size:.92rem;color:var(--ink-2)}
+.byline .sep{color:var(--ink-3)}
+.built-note{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:10px;font-size:.83rem;color:var(--ink-2);max-width:fit-content}
+.built-note .pulse{width:8px;height:8px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 0 color-mix(in srgb,var(--sage) 60%,transparent);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--sage) 60%,transparent)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+.hero-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:50px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 16px}
+.kpi .label{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px}
+.kpi .val{font-size:1.45rem;font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+.kpi .sub{font-size:.78rem;color:var(--ink-2);margin-top:4px}
+@media (max-width:760px){.hero-cards{grid-template-columns:repeat(2,1fr)}}
+
+/* -------------------------------------------------------------------------
+   Reusable
+   ------------------------------------------------------------------------- */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--shadow)}
+.card h3{margin-bottom:8px}
+.card p{color:var(--ink-2);font-size:.94rem;margin-bottom:0}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;font-size:.7rem;border-radius:99px;border:1px solid var(--border-2);background:var(--bg-2);color:var(--ink-2);font-weight:500;letter-spacing:.02em}
+.pill.high{color:var(--green);border-color:color-mix(in srgb,var(--green) 50%,var(--border));background:color-mix(in srgb,var(--green) 10%,transparent)}
+.pill.med{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 50%,var(--border));background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.pill.low{color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,var(--border));background:color-mix(in srgb,var(--red) 10%,transparent)}
+
+.callout{border-radius:14px;padding:22px 24px;border:1px solid var(--border);background:var(--panel-2)}
+.callout.accent{border-color:color-mix(in srgb,var(--accent) 60%,var(--border));background:color-mix(in srgb,var(--accent) 8%,var(--panel-2))}
+.callout.red{border-color:color-mix(in srgb,var(--red) 55%,var(--border));background:color-mix(in srgb,var(--red) 6%,var(--panel-2))}
+.callout.sage{border-color:color-mix(in srgb,var(--sage) 50%,var(--border));background:color-mix(in srgb,var(--sage) 7%,var(--panel-2))}
+.callout h4{margin-bottom:8px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.callout.red h4{color:var(--red)}
+.callout.sage h4{color:var(--sage)}
+
+/* -------------------------------------------------------------------------
+   Section 1 — Market
+   ------------------------------------------------------------------------- */
+.segments{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px}
+@media (max-width:1100px){.segments{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.segments{grid-template-columns:1fr}}
+.seg{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.seg .tag{display:inline-block;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--ink-3);margin-bottom:8px}
+.seg h4{font-size:.98rem;margin-bottom:6px}
+.seg p.who{color:var(--ink-2);font-size:.82rem;margin-bottom:12px;line-height:1.4}
+.seg ul{margin:0;padding:0;list-style:none;font-size:.78rem;color:var(--ink-2);line-height:1.6}
+.seg ul li{padding-left:14px;position:relative}
+.seg ul li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);position:absolute;left:0;top:9px}
+.seg .price{font-size:.74rem;color:var(--ink-3);margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.seg.cc{border-color:color-mix(in srgb,var(--accent) 60%,var(--border));background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+.seg.cc .tag{color:var(--accent)}
+.seg .home{position:absolute;top:14px;right:14px;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:700;padding:2px 7px;border:1px solid var(--accent);border-radius:99px;background:color-mix(in srgb,var(--accent) 10%,transparent)}
+
+.forecasts{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:900px){.forecasts{grid-template-columns:1fr}}
+.fc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px}
+.fc .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.fc .head h4{font-size:.85rem;color:var(--ink-3);font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.fc p{color:var(--ink);font-size:.95rem;margin:0;line-height:1.5}
+
+/* -------------------------------------------------------------------------
+   Section 2 — SWOT
+   ------------------------------------------------------------------------- */
+.swot{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:800px){.swot{grid-template-columns:1fr}}
+.swot-cell{border-radius:14px;padding:22px;border:1px solid var(--border);background:var(--panel);position:relative;overflow:hidden}
+.swot-cell::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(135deg,var(--swot-col) 0%, transparent 40%);opacity:.10}
+.swot-cell h3{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;position:relative}
+.swot-cell h3 .swot-label{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--swot-col);font-weight:700}
+.swot-cell h3 .swot-title{color:var(--ink)}
+.swot-cell ul{margin:0;padding:0;list-style:none;position:relative}
+.swot-cell li{padding:10px 0;border-bottom:1px solid var(--border);color:var(--ink-2);font-size:.92rem;line-height:1.5}
+.swot-cell li:last-child{border-bottom:none;padding-bottom:0}
+.swot-cell li strong{color:var(--ink);font-weight:600;display:block;margin-bottom:2px;font-size:.92rem}
+.swot-cell.s{--swot-col:var(--green)}
+.swot-cell.w{--swot-col:var(--red)}
+.swot-cell.o{--swot-col:var(--blue)}
+.swot-cell.t{--swot-col:var(--orange)}
+
+/* -------------------------------------------------------------------------
+   Section 3 — Priors update
+   ------------------------------------------------------------------------- */
+.priors{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:36px}
+@media (max-width:900px){.priors{grid-template-columns:1fr}}
+.prior{padding:24px;border-radius:14px;border:1px solid var(--border);background:var(--panel)}
+.prior .step{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:10px}
+.prior.before .step{color:var(--ink-3)}
+.prior.after{border-color:color-mix(in srgb,var(--accent) 50%,var(--border));background:color-mix(in srgb,var(--accent) 6%,var(--panel))}
+.prior.after .step{color:var(--accent)}
+.prior h3{margin-bottom:10px}
+.prior p{color:var(--ink-2);font-size:.93rem;margin-bottom:10px}
+.prior ul{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:.9rem}
+
+.ice-table{margin-top:12px;background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.ice-row{display:grid;grid-template-columns:30px 2.4fr .9fr 1.2fr 60px;gap:14px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border)}
+.ice-row:last-child{border-bottom:none}
+.ice-row.head{background:var(--bg-2);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;padding-top:10px;padding-bottom:10px}
+.ice-rank{font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.ice-name{font-weight:500;color:var(--ink)}
+.ice-name small{display:block;color:var(--ink-3);font-weight:400;font-size:.78rem;margin-top:2px}
+.ice-bar{height:8px;background:var(--bg-3);border-radius:99px;overflow:hidden;position:relative}
+.ice-bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.ice-bar.is-in > span{width:var(--w)}
+.ice-bar.muted > span{background:linear-gradient(90deg,var(--ink-3),var(--ink-3));opacity:.55}
+.ice-arr{font-size:.82rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.ice-score{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;text-align:right}
+.ice-row.muted .ice-score{color:var(--ink-3)}
+@media (max-width:760px){
+  .ice-row{grid-template-columns:24px 1.6fr 50px;gap:8px}
+  .ice-row .ice-bar,.ice-row .ice-arr{display:none}
+  .ice-row.head{grid-template-columns:24px 1.6fr 50px}
+}
+.flag-ship{display:inline-block;font-size:.62rem;letter-spacing:.12em;font-weight:700;text-transform:uppercase;color:var(--green);border:1px solid var(--green);border-radius:99px;padding:1px 7px;margin-left:8px;vertical-align:middle;background:color-mix(in srgb,var(--green) 10%,transparent)}
+.flag-defer{display:inline-block;font-size:.62rem;letter-spacing:.12em;font-weight:700;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--border-2);border-radius:99px;padding:1px 7px;margin-left:8px;vertical-align:middle}
+
+/* -------------------------------------------------------------------------
+   Section 4 — Prototype
+   ------------------------------------------------------------------------- */
+.proto-wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:32px;align-items:start}
+@media (max-width:900px){.proto-wrap{grid-template-columns:1fr}}
+.proto-mock{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow);overflow:hidden}
+.proto-bar{display:flex;align-items:center;gap:6px;padding:0 0 10px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.proto-bar .dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);opacity:.5}
+.proto-bar .dot.r{background:#ef6e62}
+.proto-bar .dot.y{background:#e5b952}
+.proto-bar .dot.g{background:#7fb56b}
+.proto-bar .title{margin-left:10px;font-size:.78rem;color:var(--ink-3)}
+.proto-bar .speed{margin-left:auto;display:flex;gap:4px}
+.proto-bar .speed span{font-size:.7rem;padding:2px 8px;background:var(--bg-2);border-radius:6px;color:var(--ink-3)}
+.proto-bar .speed span.on{background:var(--accent);color:#fff}
+.fleet{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.agent{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:.78rem}
+.agent .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.agent .id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.72rem;color:var(--ink-3)}
+.agent .st{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700;padding:1px 6px;border-radius:99px}
+.agent .st.plan{color:var(--blue);background:color-mix(in srgb,var(--blue) 16%,transparent)}
+.agent .st.code{color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.agent .st.test{color:var(--gold);background:color-mix(in srgb,var(--gold) 18%,transparent)}
+.agent .st.pr{color:var(--green);background:color-mix(in srgb,var(--green) 18%,transparent)}
+.agent .st.block{color:var(--red);background:color-mix(in srgb,var(--red) 18%,transparent)}
+.agent .desc{color:var(--ink);font-size:.82rem;line-height:1.35;margin-bottom:8px}
+.agent .prog{height:4px;background:var(--bg-3);border-radius:99px;overflow:hidden}
+.agent .prog > span{display:block;height:100%;background:var(--accent)}
+.agent.plan .prog > span{background:var(--blue)}
+.agent.code .prog > span{background:var(--accent)}
+.agent.test .prog > span{background:var(--gold)}
+.agent.pr .prog > span{background:var(--green)}
+.agent.block .prog > span{background:var(--red)}
+.agent .meta{display:flex;justify-content:space-between;font-size:.7rem;color:var(--ink-3);margin-top:6px;font-variant-numeric:tabular-nums}
+
+.proto-notes h3{margin-bottom:10px}
+.proto-notes p{color:var(--ink-2);margin-bottom:18px}
+.proto-list{margin:0;padding:0;list-style:none}
+.proto-list li{padding:14px 0;border-bottom:1px solid var(--border);display:grid;grid-template-columns:24px 1fr;gap:14px;align-items:start}
+.proto-list li:last-child{border-bottom:none}
+.proto-list .num{width:24px;height:24px;border-radius:50%;background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:.74rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.proto-list strong{color:var(--ink);display:block;margin-bottom:2px;font-size:.94rem}
+.proto-list span{color:var(--ink-2);font-size:.88rem}
+.proto-link{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:10px 16px;border:1px solid var(--accent);border-radius:10px;color:var(--accent);font-weight:600;font-size:.9rem;border-bottom:1px solid var(--accent)}
+.proto-link:hover{background:var(--accent);color:#fff;border-bottom-color:var(--accent)}
+
+/* -------------------------------------------------------------------------
+   Section 5 — Eval
+   ------------------------------------------------------------------------- */
+.nsm{padding:30px;border-radius:16px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,var(--panel)),var(--panel));border:1px solid color-mix(in srgb,var(--accent) 40%,var(--border));margin-bottom:36px}
+.nsm .label{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:10px}
+.nsm .metric{font-size:clamp(1.4rem,2.6vw,1.95rem);font-weight:600;letter-spacing:-.02em;line-height:1.25;color:var(--ink)}
+.nsm .why{color:var(--ink-2);margin-top:12px;font-size:.95rem}
+
+.tree{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:36px;overflow-x:auto}
+.tree .l0{color:var(--accent);font-weight:700}
+.tree .l1{color:var(--ink)}
+.tree .l2{color:var(--ink-3)}
+.tree .row{padding:3px 0;white-space:nowrap}
+.tree .pipe{color:var(--ink-3)}
+
+.eval-layers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:30px}
+@media (max-width:900px){.eval-layers{grid-template-columns:1fr}}
+.layer{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative}
+.layer .num{position:absolute;top:14px;right:16px;font-size:.7rem;color:var(--ink-3);font-weight:600}
+.layer h4{margin-bottom:8px;font-size:1.02rem}
+.layer p.sub{color:var(--ink-3);font-size:.82rem;margin-bottom:14px;font-style:italic}
+.layer ul{margin:0;padding-left:18px;color:var(--ink-2);font-size:.86rem;line-height:1.55}
+.layer.l1{border-top:3px solid var(--blue)}
+.layer.l2{border-top:3px solid var(--gold)}
+.layer.l3{border-top:3px solid var(--green)}
+
+/* -------------------------------------------------------------------------
+   Section 6 — Risks
+   ------------------------------------------------------------------------- */
+.risk-table{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:30px}
+.risk-row{display:grid;grid-template-columns:30px 2.6fr 80px 80px 60px 1.6fr;gap:12px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--border);font-size:.88rem}
+.risk-row:last-child{border-bottom:none}
+.risk-row.head{background:var(--bg-2);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.risk-row .rname{color:var(--ink)}
+.risk-row .rname small{color:var(--ink-3);display:block;font-size:.76rem;margin-top:2px}
+.risk-row .rcat{font-size:.72rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.risk-row .rnum{font-variant-numeric:tabular-nums;font-weight:600}
+.risk-row .rscore{font-weight:700;color:var(--red);font-variant-numeric:tabular-nums;text-align:center}
+.risk-row .rscore.med{color:var(--gold)}
+.risk-row .rscore.low{color:var(--sage)}
+.risk-row .rsig{color:var(--ink-2);font-size:.82rem;line-height:1.45}
+.risk-row .rrank{color:var(--ink-3);font-weight:600;font-variant-numeric:tabular-nums}
+@media (max-width:900px){
+  .risk-row{grid-template-columns:30px 1fr 50px;gap:8px}
+  .risk-row .rcat,.risk-row .rnum,.risk-row .rsig{display:none}
+}
+
+/* -------------------------------------------------------------------------
+   Section 7 — Launch
+   ------------------------------------------------------------------------- */
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+@media (max-width:900px){.timeline{grid-template-columns:1fr}}
+.tl{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;border-top:3px solid var(--accent)}
+.tl .quarter{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:6px}
+.tl h4{margin-bottom:12px;font-size:1.05rem}
+.tl ul{margin:0;padding:0;list-style:none;font-size:.86rem;color:var(--ink-2);line-height:1.55}
+.tl ul li{padding:6px 0;padding-left:16px;position:relative;border-bottom:1px dashed var(--border)}
+.tl ul li:last-child{border-bottom:none}
+.tl ul li::before{content:"";width:5px;height:5px;background:var(--accent);border-radius:50%;position:absolute;left:0;top:14px}
+.tl .kpi-num{display:inline-block;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+.tl.q2{border-top-color:var(--gold)}
+.tl.q2 .quarter{color:var(--gold)}
+.tl.q2 ul li::before{background:var(--gold)}
+.tl.q3{border-top-color:var(--sage)}
+.tl.q3 .quarter{color:var(--sage)}
+.tl.q3 ul li::before{background:var(--sage)}
+.tl.q4{border-top-color:var(--blue)}
+.tl.q4 .quarter{color:var(--blue)}
+.tl.q4 ul li::before{background:var(--blue)}
+
+.channels{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:36px}
+@media (max-width:900px){.channels{grid-template-columns:repeat(2,1fr)}}
+.chan{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;gap:14px;align-items:flex-start}
+.chan .icon{flex:none;width:38px;height:38px;border-radius:9px;background:color-mix(in srgb,var(--accent) 14%,transparent);display:inline-flex;align-items:center;justify-content:center;color:var(--accent)}
+.chan .icon svg{width:18px;height:18px}
+.chan h5{margin:0 0 4px;font-size:.92rem;color:var(--ink);font-weight:600}
+.chan p{margin:0;color:var(--ink-2);font-size:.82rem;line-height:1.45}
+
+.loops{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:900px){.loops{grid-template-columns:1fr}}
+.loop{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px}
+.loop h4{margin-bottom:10px;font-size:1rem}
+.loop .diag{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:14px;font-size:.74rem}
+.loop .node{padding:5px 10px;border:1px solid var(--border-2);border-radius:6px;background:var(--bg-2);color:var(--ink-2);white-space:nowrap}
+.loop .arr{color:var(--accent);font-weight:700}
+.loop .node.start{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.loop p{color:var(--ink-2);font-size:.85rem;margin:0}
+
+/* -------------------------------------------------------------------------
+   Section 8 — No
+   ------------------------------------------------------------------------- */
+.no-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:900px){.no-cards{grid-template-columns:1fr}}
+.no{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;border-left:3px solid var(--red)}
+.no .ico{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--red);color:var(--red);font-weight:700;font-size:.92rem;margin-bottom:12px}
+.no h4{margin-bottom:8px;color:var(--ink);font-size:1rem}
+.no p{color:var(--ink-2);font-size:.88rem;margin:0;line-height:1.5}
+.no p + p{margin-top:8px}
+.no em{color:var(--ink-3);font-style:normal;font-size:.8rem;display:block;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+
+/* -------------------------------------------------------------------------
+   Footer
+   ------------------------------------------------------------------------- */
+footer{padding:60px 0 80px;border-top:1px solid var(--border);background:var(--bg-2)}
+footer .row{display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between}
+footer p{margin:0;color:var(--ink-2);font-size:.9rem}
+footer .meta{font-size:.8rem;color:var(--ink-3)}
+
+/* -------------------------------------------------------------------------
+   Animations
+   ------------------------------------------------------------------------- */
+.fade-up{opacity:0;transform:translateY(14px);transition:opacity .6s ease,transform .6s ease}
+.fade-up.is-in{opacity:1;transform:none}
+
+/* -------------------------------------------------------------------------
+   Print
+   ------------------------------------------------------------------------- */
+@media print{
+  :root[data-theme="dark"],:root[data-theme="light"]{
+    --bg:#fff;--bg-2:#fff;--bg-3:#fff;--panel:#fff;--panel-2:#fff;
+    --border:#ccc;--border-2:#aaa;--ink:#000;--ink-2:#222;--ink-3:#555;
+    --accent:#a14a2a;--shadow:none;
+  }
+  .topbar,.theme-btn,.proto-link{display:none!important}
+  section{padding:40px 0;page-break-inside:avoid;border-top:1px solid #ccc}
+  .hero{padding:30px 0}
+  .fade-up{opacity:1!important;transform:none!important}
+  .ice-bar > span{width:var(--w)!important}
+  body{font-size:11pt}
+  a{color:#000;border-bottom:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================== TOPBAR ============================== -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-dot"></span>Claude Code · Case Study</div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#market">Market</a>
+      <a href="#swot">SWOT</a>
+      <a href="#priors">Priors</a>
+      <a href="#prototype">Prototype</a>
+      <a href="#eval">Evaluation</a>
+      <a href="#risks">Risks</a>
+      <a href="#launch">Launch</a>
+      <a href="#no">Saying no</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle theme" title="Toggle light/dark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ============================== HERO ============================== -->
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">AI PM Case Study · 2026</span>
+    <h1>Claude Code — the agent is the product, not the IDE.</h1>
+    <p class="thesis">Anthropic can <strong>5–10× Claude Code revenue in 18 months</strong> by anchoring on <strong>Enterprise + GitHub-native distribution</strong> before chasing Web or Async. The model already wins on quality; the unlock is converting that into governed, channel-driven revenue.</p>
+    <div class="byline">
+      <span><strong>Tracy Chen</strong></span>
+      <span class="sep">·</span>
+      <a href="mailto:chenxi.tracy@gmail.com">chenxi.tracy@gmail.com</a>
+      <span class="sep">·</span>
+      <a href="https://github.com/tracych/ai-pm-case-studies" target="_blank" rel="noopener">github.com/tracych/ai-pm-case-studies</a>
+    </div>
+    <div class="built-note">
+      <span class="pulse"></span>
+      Synthesized from an 8-agent parallel analysis. Source docs in <code>/claude-code/</code>.
+    </div>
+
+    <div class="hero-cards">
+      <div class="kpi">
+        <div class="label">2026 TAM</div>
+        <div class="val">$25–35B</div>
+        <div class="sub">AI coding, bottoms-up</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Claude Code SAM</div>
+        <div class="val">$6–10B</div>
+        <div class="sub">Terminal-first, real codebases</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Top-1 ICE bet</div>
+        <div class="val">Enterprise tier</div>
+        <div class="sub">Score 540 · ~$600M ceiling</div>
+      </div>
+      <div class="kpi">
+        <div class="label">North-star metric</div>
+        <div class="val">WAC-1</div>
+        <div class="sub">Weekly active coders w/ ≥1 task</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================== SECTION 1: MARKET ============================== -->
+<section id="market">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">01 · Market landscape</span>
+      <h2>Five segments, one product that bleeds across all of them.</h2>
+      <p class="lede">Claude Code is officially a terminal-first CLI agent — but in practice it ships into the IDE, the browser, CI, and the PR. The strategy makes <em>the agent</em> the product and <em>the surface</em> interchangeable.</p>
+    </div>
+
+    <div class="segments fade-up">
+      <div class="seg">
+        <div class="tag">Segment A</div>
+        <h4>IDE copilots</h4>
+        <p class="who">Lives inside VS Code / JetBrains / a fork.</p>
+        <ul>
+          <li>GitHub Copilot</li>
+          <li>Cursor</li>
+          <li>Windsurf</li>
+          <li>JetBrains AI</li>
+        </ul>
+        <div class="price">$10–40/seat · Copilot ~$600M ARR</div>
+      </div>
+
+      <div class="seg cc">
+        <div class="home">Home base</div>
+        <div class="tag">Segment B</div>
+        <h4>Terminal / CLI</h4>
+        <p class="who">Fastest-growing segment in 2026.</p>
+        <ul>
+          <li><strong>Claude Code</strong></li>
+          <li>Aider (OSS)</li>
+          <li>OpenAI Codex CLI</li>
+          <li>Gemini CLI</li>
+        </ul>
+        <div class="price">Bundled in Pro/Max · est. $200–400M run-rate</div>
+      </div>
+
+      <div class="seg">
+        <div class="tag">Segment C</div>
+        <h4>Async agents</h4>
+        <p class="who">"Fire and forget" PR-bots.</p>
+        <ul>
+          <li>Devin ($500/mo)</li>
+          <li>Copilot Workspace</li>
+          <li>Sourcegraph Amp</li>
+          <li>Factory.ai</li>
+        </ul>
+        <div class="price">Per-agent or enterprise</div>
+      </div>
+
+      <div class="seg">
+        <div class="tag">Segment D</div>
+        <h4>Cloud / browser</h4>
+        <p class="who">No local setup, lower ARPU.</p>
+        <ul>
+          <li>Replit</li>
+          <li>Lovable</li>
+          <li>v0 (Vercel)</li>
+          <li>Bolt.new</li>
+        </ul>
+        <div class="price">$20–50 · not the fight to pick</div>
+      </div>
+
+      <div class="seg">
+        <div class="tag">Segment E</div>
+        <h4>PR review</h4>
+        <p class="who">Insert at the PR layer; complementary.</p>
+        <ul>
+          <li>Greptile</li>
+          <li>CodeRabbit ($10M+ ARR)</li>
+          <li>Sourcegraph Cody</li>
+        </ul>
+        <div class="price">Per-repo · adjacent wedge</div>
+      </div>
+    </div>
+
+    <h3 style="margin:30px 0 14px;color:var(--ink-3);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase">Where the market is going — next 12 months</h3>
+    <div class="forecasts fade-up">
+      <div class="fc">
+        <div class="head"><h4>Forecast</h4><span class="pill high">High</span></div>
+        <p>Async agents become daily-driver-credible for trivial PRs. Dependabot-class work converges on PR-level review.</p>
+      </div>
+      <div class="fc">
+        <div class="head"><h4>Forecast</h4><span class="pill med">Med-High</span></div>
+        <p>IDE becomes a commodity surface. The agent becomes the product. Cursor's moat erodes as the same model lives everywhere.</p>
+      </div>
+      <div class="fc">
+        <div class="head"><h4>Forecast</h4><span class="pill high">High</span></div>
+        <p>Enterprise procurement consolidates to 1–2 vendors per company. Likely two-vendor equilibrium: Copilot Enterprise + one specialist.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 2: SWOT ============================== -->
+<section id="swot">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">02 · SWOT</span>
+      <h2>Where the moat is real, where it's borrowed.</h2>
+      <p class="lede">The highest-leverage move is taking the agentic UX + plugin pattern and formalizing a marketplace with revenue share. The defensive priority is shipping web + enterprise before Microsoft's bundle closes the door.</p>
+    </div>
+
+    <div class="swot fade-up">
+      <div class="swot-cell s">
+        <h3><span class="swot-label">Strengths</span><span class="swot-title">Where the moat is real</span></h3>
+        <ul>
+          <li><strong>Best-in-class model on real coding work.</strong>Opus holds SWE-bench Verified through multiple competitor releases. The product is winning where it monetizes.</li>
+          <li><strong>Agentic terminal UX.</strong>Model as coworker, not autocomplete sidecar. Power users feel the difference instantly — drives the HN/Twitter word of mouth.</li>
+          <li><strong>Plugin / skill ecosystem.</strong>SKILL.md + hooks pattern is being copied. Extensibility is a moat when other teams ship into your shape.</li>
+          <li><strong>Direct revenue path.</strong>Anthropic owns the model, the CLI, and the bill. No App Store tax, no channel conflict.</li>
+        </ul>
+      </div>
+
+      <div class="swot-cell w">
+        <h3><span class="swot-label">Weaknesses</span><span class="swot-title">Where the moat is borrowed</span></h3>
+        <ul>
+          <li><strong>Distribution gap vs Copilot.</strong>Copilot ships default-on in VS Code + GitHub. Claude Code requires intentional install.</li>
+          <li><strong>Terminal-first repels mainstream.</strong>Delights senior ICs; actively hostile to juniors, bootcamp grads — the next decade of buyers.</li>
+          <li><strong>No flagship async product.</strong>Devin owns the "fire-and-forget PR" narrative. Background mode exists but isn't packaged.</li>
+          <li><strong>COGS exposure to model pricing.</strong>Unit economics ride inference costs. A price war compresses margin with no app-layer absorber.</li>
+        </ul>
+      </div>
+
+      <div class="swot-cell o">
+        <h3><span class="swot-label">Opportunities</span><span class="swot-title">Where revenue compounds</span></h3>
+        <ul>
+          <li><strong>Enterprise tier (SSO, RBAC, fleet).</strong>$50–100/seat ARR. Finance teams are already asking for consolidated billing.</li>
+          <li><strong>Native GitHub PR review app.</strong>Lowest-risk agent surface; converts repo activity into seats.</li>
+          <li><strong>Async/background agent SKU.</strong>Direct Devin counter, packaged with queue UI and PR review.</li>
+          <li><strong>Plugin marketplace w/ rev-share.</strong>Two-sided economy + lock-in once 1,000+ active plugins exist.</li>
+        </ul>
+      </div>
+
+      <div class="swot-cell t">
+        <h3><span class="swot-label">Threats</span><span class="swot-title">Where the fight gets ugly</span></h3>
+        <ul>
+          <li><strong>GitHub Copilot bundling.</strong>Microsoft can give Copilot away inside the dev funnel. Bundling kills standalone tools historically.</li>
+          <li><strong>Cursor's IDE moat.</strong>Captured pro-dev mindshare and a paid base. Switching cost grows as their agent matures.</li>
+          <li><strong>Model commoditization.</strong>If Gemini/Llama close the SWE-bench gap, the moat erodes and the product has to win on UX alone.</li>
+          <li><strong>"One throat to choke."</strong>CIOs prefer MSFT or Google bundles. Anthropic is a third vendor on the PO.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 3: PRIORS ============================== -->
+<section id="priors">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">03 · How the analysis changed my priors ★</span>
+      <h2>I came in betting on Web + Async. The ICE math sent me elsewhere.</h2>
+      <p class="lede">This is the section a hiring manager should read carefully. The interesting move isn't picking a bet — it's updating cleanly when the data disagrees with your prior.</p>
+    </div>
+
+    <div class="priors fade-up">
+      <div class="prior before">
+        <div class="step">Initial hypothesis · pre-analysis</div>
+        <h3>Web + Async — the attention-grabbing pair</h3>
+        <p>My prior was that the most narratively interesting bet would be the right one to ship:</p>
+        <ul>
+          <li><strong>Claude Code Web</strong> — collapses time-to-first-prompt under 60s, mainstream TAM unlock</li>
+          <li><strong>Async Background Agent</strong> — direct Devin competitor, premium ARPU, mental-model shift</li>
+        </ul>
+        <p style="margin-top:12px"><em>Why it felt right:</em> both are differentiated, both are press-friendly, both demo beautifully. The prototype, eval framework, risks, and launch plan were all drafted against this pair.</p>
+      </div>
+
+      <div class="prior after">
+        <div class="step">What the analysis revealed</div>
+        <h3>Enterprise + GitHub PR App — the boring math wins</h3>
+        <p>The ICE table didn't care about narrative. It cared about <strong>where demand was already screaming</strong> and where execution risk was lowest:</p>
+        <ul>
+          <li><strong>Enterprise tier</strong> — highest impact (10), highest confidence (9), proven motion via Copilot Enterprise. Finance teams are already <em>asking</em> for consolidated billing.</li>
+          <li><strong>GitHub PR review app</strong> — known pattern, read-only safe surface, converts repos into seats. CodeRabbit doing $10M+ ARR with a thinner model.</li>
+        </ul>
+        <p style="margin-top:12px"><em>Why I updated:</em> Web is uncertain unit economics; Async is a hard reliability bar. Both are right bets <em>later</em>. The bird in the hand is enterprise.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:8px 0 14px;color:var(--ink-3);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase">ICE Ranking · top 5 opportunities</h3>
+    <div class="ice-table fade-up">
+      <div class="ice-row head">
+        <div>#</div><div>Opportunity</div><div>18-mo ceiling</div><div>ICE score</div><div style="text-align:right">Pts</div>
+      </div>
+      <div class="ice-row" data-score="540">
+        <div class="ice-rank">1</div>
+        <div class="ice-name">Team &amp; Enterprise tier <span class="flag-ship">Ship Q1</span><small>SSO · RBAC · audit · fleet management · 10×9×6</small></div>
+        <div class="ice-arr">~$600M ARR</div>
+        <div class="ice-bar" style="--w:100%"><span></span></div>
+        <div class="ice-score">540</div>
+      </div>
+      <div class="ice-row" data-score="448">
+        <div class="ice-rank">2</div>
+        <div class="ice-name">Native GitHub/GitLab PR review <span class="flag-ship">Ship Q2</span><small>GitHub App · per-repo or bundled · 7×8×8</small></div>
+        <div class="ice-arr">~$120M ARR</div>
+        <div class="ice-bar" style="--w:83%"><span></span></div>
+        <div class="ice-score">448</div>
+      </div>
+      <div class="ice-row muted" data-score="384">
+        <div class="ice-rank">3</div>
+        <div class="ice-name">IDE extension parity (VS Code, JetBrains) <span class="flag-defer">Q3</span><small>27M MAU surface · 8×8×6</small></div>
+        <div class="ice-arr">~$130M ARR</div>
+        <div class="ice-bar muted" style="--w:71%"><span></span></div>
+        <div class="ice-score">384</div>
+      </div>
+      <div class="ice-row muted" data-score="315">
+        <div class="ice-rank">4</div>
+        <div class="ice-name">Claude Code Web <span class="flag-defer">Q3–Q4</span><small>Browser-native · mainstream TAM · 9×7×5</small></div>
+        <div class="ice-arr">~$30M yr-1</div>
+        <div class="ice-bar muted" style="--w:58%"><span></span></div>
+        <div class="ice-score">315</div>
+      </div>
+      <div class="ice-row muted" data-score="192">
+        <div class="ice-rank">5</div>
+        <div class="ice-name">Async Background Agent <span class="flag-defer">Q3 upsell</span><small>Devin counter · upsell into Enterprise · 8×6×4</small></div>
+        <div class="ice-arr">~$180M ARR</div>
+        <div class="ice-bar muted" style="--w:36%"><span></span></div>
+        <div class="ice-score">192</div>
+      </div>
+    </div>
+
+    <div class="callout accent fade-up" style="margin-top:30px">
+      <h4>Final recommendation</h4>
+      <p style="color:var(--ink);font-size:1.05rem;margin-bottom:8px"><strong>Ship Enterprise + GitHub PR App in parallel in Q1–Q2.</strong> Revisit Async as the Q3 upsell to the Enterprise tier (where reliability risk is acceptable because IT controls deployment). Defer Web to Q3–Q4 once unit economics on cloud sandboxing are de-risked.</p>
+      <p style="color:var(--ink-2);font-size:.92rem;margin:0"><strong>Honest disclosure:</strong> the evaluation, risks, and launch-plan sections in this case study were drafted against the earlier Web + Async prior — and the prototype was built for Async. The methodology transfers cleanly to either bet; a real shipping team would re-run the launch table against the final picks. Showing the update is the point.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 4: PROTOTYPE ============================== -->
+<section id="prototype">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">04 · Prototype</span>
+      <h2>Async Fleet — the Q3 upsell, validated visually.</h2>
+      <p class="lede">Even though the analysis says Enterprise + GitHub PR App ship first, the prototype validates the Async Background Agent — the Q3 upsell. Built as a fleet-of-agents dashboard to make the new PM mental model legible in 60 seconds.</p>
+    </div>
+
+    <div class="proto-wrap fade-up">
+      <div class="proto-mock" aria-hidden="true">
+        <div class="proto-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="title">claude-code · fleet · 5 agents</span>
+          <span class="speed"><span>1×</span><span class="on">2×</span><span>4×</span></span>
+        </div>
+        <div class="fleet">
+          <div class="agent plan">
+            <div class="top"><span class="id">TASK-4118</span><span class="st plan">Plan</span></div>
+            <div class="desc">Refactor auth middleware → JWT v2</div>
+            <div class="prog"><span style="width:32%"></span></div>
+            <div class="meta"><span>0/5 steps</span><span>$0.21</span></div>
+          </div>
+          <div class="agent code">
+            <div class="top"><span class="id">TASK-4119</span><span class="st code">Code</span></div>
+            <div class="desc">Add pagination to /users endpoint</div>
+            <div class="prog"><span style="width:64%"></span></div>
+            <div class="meta"><span>3/5 steps</span><span>$0.84</span></div>
+          </div>
+          <div class="agent test">
+            <div class="top"><span class="id">TASK-4120</span><span class="st test">Test</span></div>
+            <div class="desc">Migrate legacy queries to Drizzle ORM</div>
+            <div class="prog"><span style="width:81%"></span></div>
+            <div class="meta"><span>4/5 steps</span><span>$1.47</span></div>
+          </div>
+          <div class="agent block">
+            <div class="top"><span class="id">TASK-4121</span><span class="st block">Blocked</span></div>
+            <div class="desc">Stripe webhook v3 migration — missing secret</div>
+            <div class="prog"><span style="width:42%"></span></div>
+            <div class="meta"><span>Awaiting input</span><span>$0.38</span></div>
+          </div>
+          <div class="agent pr" style="grid-column:1/-1">
+            <div class="top"><span class="id">TASK-4117</span><span class="st pr">PR Open</span></div>
+            <div class="desc">#2341 · Fix race condition in cache invalidation · +47 −12</div>
+            <div class="prog"><span style="width:100%"></span></div>
+            <div class="meta"><span>5/5 steps · ready to review</span><span>$2.04</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="proto-notes">
+        <h3>PM-thinking design choices</h3>
+        <p>Each design choice is doing a job — making the agent feel <em>observable</em>, <em>controllable</em>, and <em>trustworthy</em> at a glance.</p>
+        <ul class="proto-list">
+          <li><span class="num">1</span><span><strong>Blocked agent refuses to invent secrets.</strong>TASK-4121 sits in <code>Blocked</code> with a visible "Awaiting input" instead of fabricating a webhook key. This teaches users that a good agent says "I don't know" — the trust primitive that makes async possible.</span></li>
+          <li><span class="num">2</span><span><strong>PR body mirrors what a senior eng would write.</strong>The completed agent (TASK-4117) doesn't dump a transcript — it produces a reviewable PR with line counts and a change summary. Optimized for the reviewer's 90-second skim.</span></li>
+          <li><span class="num">3</span><span><strong>Speed toggle compresses 4 lifecycle stages into 60 seconds.</strong>The 1×/2×/4× control lets the demo viewer see Plan → Code → Test → PR in one breath. Removes the "I'd need to watch it for 20 minutes" friction.</span></li>
+          <li><span class="num">4</span><span><strong>Cost per task surfaced inline.</strong>The $/agent meter is cosmetic in the prototype but signals the right product axis — async only works if cost-per-merged-PR is legible to the buyer.</span></li>
+        </ul>
+        <a class="proto-link" href="./04-prototype/index.html" target="_blank" rel="noopener">
+          Open the live prototype
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 5: EVAL ============================== -->
+<section id="eval">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">05 · How I'd measure success</span>
+      <h2>One north star, three eval layers, four pitfalls.</h2>
+      <p class="lede">Capability says the model <em>can</em>. Calibration says the model <em>knows what it can</em>. Product says the user <em>gets value</em>. Conflating these is the #1 reason AI products ship broken.</p>
+    </div>
+
+    <div class="nsm fade-up">
+      <div class="label">North-star metric</div>
+      <div class="metric">Weekly Active Coders with ≥1 completed task <span style="color:var(--accent)">(WAC-1)</span></div>
+      <p class="why">A "completed task" = a user-initiated session that ends in either (a) accepted code shipped to a branch/PR, or (b) explicit thumbs-up + session-end. Not a turn. Not a message. <strong>A unit of work the user kept.</strong></p>
+    </div>
+
+    <div class="tree fade-up" aria-label="Metric tree">
+<div class="row l0">[L0] NORTH STAR · WAC-1</div>
+<div class="row l1"><span class="pipe">├──</span> [L1] Activation rate — % new signups to first completed task in 7d</div>
+<div class="row l2"><span class="pipe">│    ├──</span> Time-to-first-task (median min, signup → first accepted)</div>
+<div class="row l2"><span class="pipe">│    ├──</span> First-session task-success %</div>
+<div class="row l2"><span class="pipe">│    └──</span> First-week NPS (post-activation survey)</div>
+<div class="row l1"><span class="pipe">├──</span> [L1] Task throughput — completed tasks / WAC / week</div>
+<div class="row l2"><span class="pipe">│    ├──</span> Median turns-per-completed-task (floor ~2)</div>
+<div class="row l2"><span class="pipe">│    └──</span> Tool-call success rate (Edit/Bash/Read no-error %)</div>
+<div class="row l1"><span class="pipe">├──</span> [L1] Quality / trust — does the work survive contact w/ reality</div>
+<div class="row l2"><span class="pipe">│    ├──</span> Suggestion acceptance rate (accepted / shown)</div>
+<div class="row l2"><span class="pipe">│    ├──</span> Post-accept revert rate within 24h</div>
+<div class="row l2"><span class="pipe">│    └──</span> Hallucination rate on codebase claims</div>
+<div class="row l1"><span class="pipe">└──</span> [L1] Retention — WAC-1 cohort retention at W4 / W12</div>
+<div class="row l2"><span class="pipe">     ├──</span> Repeat task rate (% users w/ ≥3 completed tasks/wk)</div>
+<div class="row l2"><span class="pipe">     └──</span> Multi-repo usage (% users on ≥2 repos in 4 wks)</div>
+    </div>
+
+    <div class="eval-layers fade-up">
+      <div class="layer l1">
+        <span class="num">Layer 1</span>
+        <h4>Capability</h4>
+        <p class="sub">Does the agent get the task right?</p>
+        <ul>
+          <li>250 real coding tasks + 50 curated edge cases, refreshed quarterly, held private</li>
+          <li>Nightly on prod + every candidate checkpoint</li>
+          <li><strong>Gate:</strong> promotion blocked if pass-rate regresses &gt;2pp</li>
+        </ul>
+      </div>
+      <div class="layer l2">
+        <span class="num">Layer 2</span>
+        <h4>Calibration</h4>
+        <p class="sub">Does the agent know when it's wrong?</p>
+        <ul>
+          <li>When the model says "this works," is it true? Target ≥85% precision</li>
+          <li>Hallucination rate on codebase facts: &lt;3%</li>
+          <li>Surrender quality: useful clarifying question vs. fabricate? Rubric 0–3</li>
+        </ul>
+      </div>
+      <div class="layer l3">
+        <span class="num">Layer 3</span>
+        <h4>Product</h4>
+        <p class="sub">Does the developer actually succeed?</p>
+        <ul>
+          <li>End-to-end task success from real telemetry</li>
+          <li>Time-to-first-merge as headline activation metric</li>
+          <li>Trust score: 60% behavioral + 40% survey</li>
+          <li>Cost-to-value: $ per completed task by type</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout red fade-up">
+      <h4>Eval pitfalls to avoid</h4>
+      <ul style="margin:8px 0 0;padding-left:20px;color:var(--ink-2);font-size:.94rem;line-height:1.6">
+        <li><strong>Benchmark hacking.</strong> SWE-bench stopped predicting real-world success once labs trained on adjacent data. Keep a private hold-out, never publish, refresh quarterly.</li>
+        <li><strong>Survivorship bias on completed sessions.</strong> Acceptance rate looks great if you only measure users who came back. Always bucket session-abandons; rage-quit rate is a guardrail.</li>
+        <li><strong>Cost-blind eval.</strong> A 5pp quality boost at 4× cost is a P&amp;L disaster dressed as a win. Every capability eval reports cost in the same row.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 6: RISKS ============================== -->
+<section id="risks">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">06 · Risks &amp; kill criteria</span>
+      <h2>Pre-commit to walking away, in writing, before the data arrives.</h2>
+      <p class="lede">Severity × likelihood, sorted by score. The kill criteria below are non-negotiable — the signal we send internally is that we will kill our own babies on data, not vibes.</p>
+    </div>
+
+    <div class="risk-table fade-up">
+      <div class="risk-row head">
+        <div>#</div><div>Risk</div><div>Sev</div><div>Lik</div><div>Score</div><div>Trigger signal</div>
+      </div>
+      <div class="risk-row">
+        <div class="rrank">1</div>
+        <div class="rname">Async agent reliability stalls below trust threshold<small><span class="rcat">Product / Technical</span></small></div>
+        <div class="rnum">5</div><div class="rnum">4</div>
+        <div class="rscore">20</div>
+        <div class="rsig">SWE-bench plateaus across two model gens; beta NPS &lt;20</div>
+      </div>
+      <div class="risk-row">
+        <div class="rrank">2</div>
+        <div class="rname">Per-task compute &gt; WTP; foundation-model price war<small><span class="rcat">Cost economics</span></small></div>
+        <div class="rnum">5</div><div class="rnum">4</div>
+        <div class="rscore">20</div>
+        <div class="rsig">Median async task &gt;$8 against $50 ARPU; competitor cuts API &gt;30%</div>
+      </div>
+      <div class="risk-row">
+        <div class="rrank">3</div>
+        <div class="rname">Competitor preempts the web/async wedge<small><span class="rcat">Market</span></small></div>
+        <div class="rnum">5</div><div class="rnum">4</div>
+        <div class="rscore">20</div>
+        <div class="rsig">Cursor ships hosted async at lower price; Copilot Workspace GAs</div>
+      </div>
+      <div class="risk-row">
+        <div class="rrank">4</div>
+        <div class="rname">Web UX feels like a toy to existing power users<small><span class="rcat">Product</span></small></div>
+        <div class="rnum">4</div><div class="rnum">4</div>
+        <div class="rscore">16</div>
+        <div class="rsig">D7 retention &lt;15%; &gt;40% web sessions end with "open in CLI"</div>
+      </div>
+      <div class="risk-row">
+        <div class="rrank">5</div>
+        <div class="rname">Viral agent failure (deleted repo, leaked secret)<small><span class="rcat">Reputational</span></small></div>
+        <div class="rnum">5</div><div class="rnum">3</div>
+        <div class="rscore med">15</div>
+        <div class="rsig">First "Claude Code wiped my repo" tweet &gt;10K impressions</div>
+      </div>
+    </div>
+
+    <div class="callout red fade-up">
+      <h4>Kill criteria · when I'd walk away from this bet</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px" class="grid-2">
+        <div>
+          <strong style="color:var(--ink);display:block;margin-bottom:6px">Claude Code Web — kill at end of Q1 post-GA if:</strong>
+          <ul style="margin:0;padding-left:18px;color:var(--ink-2);font-size:.88rem;line-height:1.55">
+            <li>Free→paid conversion &lt;5% <strong>AND</strong> DAU &lt;50K, or</li>
+            <li>D28 retention &lt;10% on free tier, or</li>
+            <li>&gt;40% of web sessions end with "switch to CLI"</li>
+          </ul>
+        </div>
+        <div>
+          <strong style="color:var(--ink);display:block;margin-bottom:6px">Async Background Agent — kill at end of Q2 post-beta if:</strong>
+          <ul style="margin:0;padding-left:18px;color:var(--ink-2);font-size:.88rem;line-height:1.55">
+            <li>Pass@1 on LiveSWE &lt;80% with verifier loop on, or</li>
+            <li>p90 cost-per-task &gt;$10 with no path to &lt;$6, or</li>
+            <li>Beta NPS &lt;10, or 2nd viral failure in 60d window</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin:14px 0 0;color:var(--ink-2);font-size:.88rem;font-style:italic">If <em>both</em> miss their Q2 gates, we stop the parallel-bet posture, pick one, and concentrate. "Almost working on both" is not a strategy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 7: LAUNCH ============================== -->
+<section id="launch">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">07 · Launch plan</span>
+      <h2>Land bottoms-up, expand through governance, compound through PRs.</h2>
+      <p class="lede">The original sequence — Async Q1 → Web Q2 — is preserved here as the planning artifact it was. The updated recommendation (Enterprise + GitHub PR) would re-shape the milestones but the cadence, channels, and loops translate directly.</p>
+    </div>
+
+    <div class="timeline fade-up">
+      <div class="tl">
+        <div class="quarter">Q1 · Foundations</div>
+        <h4>Async alpha &amp; beta</h4>
+        <ul>
+          <li>Hold-out task suite v1, <span class="kpi-num">100</span> tasks</li>
+          <li><span class="kpi-num">25</span> internal engineers run Async on real repos</li>
+          <li><span class="kpi-num">50</span> design partners onboarded, ≥30 active</li>
+          <li>In-CLI <code>claude async</code> ships in nightly</li>
+        </ul>
+      </div>
+      <div class="tl q2">
+        <div class="quarter">Q2 · Public preview</div>
+        <h4>Async + Web GA</h4>
+        <ul>
+          <li>Public preview waitlist: <span class="kpi-num">10K</span> signups / 7d</li>
+          <li>Pricing A/B: ≥<span class="kpi-num">10%</span> trial→paid at winner</li>
+          <li>GitHub App live: <span class="kpi-num">200+</span> repos week 1</li>
+          <li>Plugin marketplace v1: <span class="kpi-num">15</span> third-party plugins</li>
+        </ul>
+      </div>
+      <div class="tl q3">
+        <div class="quarter">Q3 · Scale &amp; expand</div>
+        <h4>Web GA + Enterprise</h4>
+        <ul>
+          <li>Web GA: <span class="kpi-num">25K</span> signups week 1</li>
+          <li>Async paid seats: <span class="kpi-num">5K</span> week 1</li>
+          <li><span class="kpi-num">3</span> enterprise pilots signed in 30d</li>
+          <li>Post-launch metrics dashboard live</li>
+        </ul>
+      </div>
+      <div class="tl q4">
+        <div class="quarter">Q4 · Compound</div>
+        <h4>Loops kick in</h4>
+        <ul>
+          <li>Marketplace: <span class="kpi-num">100</span> plugins w/ &gt;100 installs</li>
+          <li>Enterprise expansion: <span class="kpi-num">5×</span> land→expand multiple</li>
+          <li>Merge-rate ≥<span class="kpi-num">65%</span> on live traffic (14d rolling)</li>
+          <li>EU region GA for residency</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin:0 0 14px;color:var(--ink-3);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase">Distribution channels</h3>
+    <div class="channels fade-up">
+      <div class="chan">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+        <div><h5>Installed-base upsell</h5><p>In-CLI nudge to power users with ≥20 long sessions / 30d. CAC effectively zero.</p></div>
+      </div>
+      <div class="chan">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></div>
+        <div><h5>GitHub-native funnel</h5><p>"Try Claude Code on this PR" button injected by GitHub App. Every PR comment is a billboard.</p></div>
+      </div>
+      <div class="chan">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg></div>
+        <div><h5>Developer content</h5><p>Top-of-HN infra post. Three serialized YouTube deep-dives, flat-fee not rev-share.</p></div>
+      </div>
+      <div class="chan">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg></div>
+        <div><h5>Enterprise top-down</h5><p>Sell into existing API master agreements. Pitch is governance + audit, not net-new product.</p></div>
+      </div>
+    </div>
+
+    <h3 style="margin:0 0 14px;color:var(--ink-3);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase">Growth loops</h3>
+    <div class="loops fade-up">
+      <div class="loop">
+        <h4>Loop 1 · PR-merged flywheel</h4>
+        <div class="diag">
+          <span class="node start">User runs Async</span><span class="arr">→</span>
+          <span class="node">Agent opens PR</span><span class="arr">→</span>
+          <span class="node">Trace link</span><span class="arr">→</span>
+          <span class="node">Reviewer installs</span><span class="arr">↺</span>
+        </div>
+        <p>Every merged PR is a high-trust referral from a teammate. The trace link is the value-add disguised as attribution.</p>
+      </div>
+      <div class="loop">
+        <h4>Loop 2 · Marketplace flywheel</h4>
+        <div class="diag">
+          <span class="node start">Author ships plugin</span><span class="arr">→</span>
+          <span class="node">Installs</span><span class="arr">→</span>
+          <span class="node">Author posts publicly</span><span class="arr">→</span>
+          <span class="node">New signups</span><span class="arr">↺</span>
+        </div>
+        <p>The status game (install counts, reviews) does the marketing for free. Kicks in at ~50 authors + 10K installs/mo.</p>
+      </div>
+      <div class="loop">
+        <h4>Loop 3 · Enterprise land-and-expand</h4>
+        <div class="diag">
+          <span class="node start">10 seats land</span><span class="arr">→</span>
+          <span class="node">IT sees usage</span><span class="arr">→</span>
+          <span class="node">Org policy</span><span class="arr">→</span>
+          <span class="node">200 seats expand</span><span class="arr">↺</span>
+        </div>
+        <p>Governance is the wedge IT actually pays for. Land at 30 seats avg, expand 5× within 12 months.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SECTION 8: NO ============================== -->
+<section id="no">
+  <div class="wrap">
+    <div class="section-head fade-up">
+      <span class="eyebrow">08 · What I'd say no to</span>
+      <h2>Prioritization is mostly a list of things you refuse to do.</h2>
+      <p class="lede">Each "no" buys focus for one of the bets above. Shipping requires saying no often and in writing.</p>
+    </div>
+    <div class="no-cards fade-up">
+      <div class="no">
+        <div class="ico">✕</div>
+        <h4>No celebrity dev partnership for launch</h4>
+        <p>A flashy "X uses Claude Code" splash is manufactured social proof this audience smells immediately. It doesn't survive the first video review where the product underperforms.</p>
+        <em>Buys: credibility budget for the moment retention dips.</em>
+      </div>
+      <div class="no">
+        <div class="ico">✕</div>
+        <h4>No "Devin-killer" comparative messaging</h4>
+        <p>Naming a competitor anchors us against them and sets up an unflattering future comparison the first time our reliability dips on any axis. We compete on our own substrate: trust, eval transparency, installed base.</p>
+        <em>Buys: room to evolve the positioning as the product matures.</em>
+      </div>
+      <div class="no">
+        <div class="ico">✕</div>
+        <h4>No enterprise-only at launch</h4>
+        <p>The category is won bottoms-up by ICs who bring the tool into their team. Enterprise-first optimizes one quarter and loses four of category position. Enterprise is the <em>expand</em> motion, not the <em>land</em>.</p>
+        <em>Buys: bottoms-up funnel that the expand motion needs to feed on.</em>
+      </div>
+    </div>
+
+    <div class="callout sage fade-up" style="margin-top:30px">
+      <h4>Also deferred 12+ months</h4>
+      <p style="color:var(--ink-2);font-size:.94rem;margin:8px 0 0"><strong>Vertical expansion (Claude Design, Claude PM, Claude Data)</strong> — classic over-extension trap before the core dev market is monetized. <strong>Paid plugin marketplace</strong> — keep free for 18+ months to grow the ecosystem the same way GitHub waited 8 years before charging.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FOOTER ============================== -->
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <p>Built with Claude Code, in parallel, using 8 agents — this case study is itself a demonstration of AI-native PM work.</p>
+      <p class="meta">
+        <a href="https://github.com/tracych/ai-pm-case-studies" target="_blank" rel="noopener">github.com/tracych/ai-pm-case-studies</a>
+        &nbsp;·&nbsp;
+        <a href="mailto:chenxi.tracy@gmail.com">chenxi.tracy@gmail.com</a>
+      </p>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ---- theme toggle ---- */
+(function(){
+  var root = document.documentElement;
+  var btn = document.getElementById('themeBtn');
+  var icon = document.getElementById('themeIcon');
+  var sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>';
+  var moon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  function setIcon(){ icon.innerHTML = (root.getAttribute('data-theme')==='dark') ? moon : sun; }
+  setIcon();
+  btn.addEventListener('click', function(){
+    var next = (root.getAttribute('data-theme')==='dark') ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    setIcon();
+    try{ localStorage.setItem('cc-theme', next); }catch(e){}
+  });
+  try{
+    var saved = localStorage.getItem('cc-theme');
+    if(saved){ root.setAttribute('data-theme', saved); setIcon(); }
+  }catch(e){}
+})();
+
+/* ---- intersection-observer driven fade-ins + bar grow ---- */
+(function(){
+  if(!('IntersectionObserver' in window)){
+    document.querySelectorAll('.fade-up,.ice-bar').forEach(function(el){ el.classList.add('is-in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('is-in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.fade-up, .ice-bar').forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>
